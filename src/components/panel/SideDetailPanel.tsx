@@ -330,12 +330,6 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
                 <Users className="w-3.5 h-3.5 text-neutral-400" />
                 Saudara Kandung ({siblings.length})
               </span>
-              <button
-                onClick={() => onAddSibling(member)}
-                className="text-[11px] text-neutral-600 hover:text-neutral-900 hover:underline flex items-center gap-1"
-              >
-                <UserPlus className="w-3 h-3" /> Tambah
-              </button>
             </div>
             {siblings.length > 0 ? (
               <div className="space-y-1.5">

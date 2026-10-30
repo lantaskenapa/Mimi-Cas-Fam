@@ -505,17 +505,20 @@ export function buildFlowElements(
     onDelete: (m: FamilyMember) => void;
   },
   isDragging = false,
-  highlightDirection: HighlightDirection = 'ancestors'
+  highlightDirection: HighlightDirection = 'ancestors',
+  isHighlightEnabled = true
 ) {
   const memberMap = new Map<string, FamilyMember>();
   members.forEach((m) => memberMap.set(m.id, m));
 
-  const { highlightedMemberIds, highlightedEdgeIds } = computeLineageHighlight(
-    members,
-    selectedMemberId,
-    highlightDirection
-  );
-  const hasActiveSelection = Boolean(selectedMemberId);
+  const { highlightedMemberIds, highlightedEdgeIds } = isHighlightEnabled
+    ? computeLineageHighlight(members, selectedMemberId, highlightDirection)
+    : {
+        highlightedMemberIds: new Set<string>(),
+        highlightedEdgeIds: new Set<string>(),
+      };
+
+  const hasActiveSelection = isHighlightEnabled && Boolean(selectedMemberId);
 
   const nodes: Node[] = members.map((member) => {
     const isSelected = member.id === selectedMemberId;

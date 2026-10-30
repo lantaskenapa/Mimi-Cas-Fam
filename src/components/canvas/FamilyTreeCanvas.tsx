@@ -76,6 +76,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [isDraggingNode, setIsDraggingNode] = useState<boolean>(false);
   const [highlightDirection, setHighlightDirection] = useState<HighlightDirection>('ancestors');
+  const [isHighlightEnabled, setIsHighlightEnabled] = useState<boolean>(true);
 
   const selectedMember = useMemo(
     () => members.find((m) => m.id === selectedMemberId),
@@ -110,7 +111,8 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         onDelete,
       },
       isDraggingNode,
-      highlightDirection
+      highlightDirection,
+      isHighlightEnabled
     );
   }, [
     members,
@@ -125,6 +127,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
     onDelete,
     isDraggingNode,
     highlightDirection,
+    isHighlightEnabled,
   ]);
 
   // Local nodes state ensures 60fps/120fps smooth hardware dragging on touch/mobile
@@ -313,63 +316,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         )}
       </ReactFlow>
 
-      {/* Floating Relationship Highlight Controller */}
-      {selectedMember && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 bg-white/95 backdrop-blur-md border border-neutral-200/90 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-neutral-700 animate-in fade-in slide-in-from-top-3 duration-200 select-none max-w-[94vw]">
-          <div className="flex items-center gap-1.5 shrink-0 pl-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs font-semibold text-neutral-900 max-w-[90px] sm:max-w-[130px] truncate" title={selectedMember.fullName}>
-              {selectedMember.fullName}
-            </span>
-          </div>
-
-          <div className="h-4 w-px bg-neutral-200 shrink-0" />
-
-          {/* Direction Segmented Toggle Buttons */}
-          <div className="flex items-center bg-neutral-100 p-0.5 rounded-xl text-xs font-medium shrink-0">
-            <button
-              onClick={() => setHighlightDirection('ancestors')}
-              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 text-xs ${
-                highlightDirection === 'ancestors'
-                  ? 'bg-neutral-900 text-white shadow-xs font-semibold'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-              title="Tampilkan silsilah ke atas (Orang tua, kakek, nenek...)"
-            >
-              <span>⬆️</span>
-              <span className="hidden sm:inline">Leluhur</span>
-              <span className="sm:hidden">Atas</span>
-            </button>
-            <button
-              onClick={() => setHighlightDirection('descendants')}
-              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 text-xs ${
-                highlightDirection === 'descendants'
-                  ? 'bg-neutral-900 text-white shadow-xs font-semibold'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-              title="Tampilkan garis keturunan ke bawah (Anak, cucu...)"
-            >
-              <span>⬇️</span>
-              <span className="hidden sm:inline">Keturunan</span>
-              <span className="sm:hidden">Bawah</span>
-            </button>
-          </div>
-
-          <div className="h-4 w-px bg-neutral-200 shrink-0" />
-
-          {/* Clear highlight button */}
-          <button
-            onClick={() => onSelectMember(null)}
-            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 transition-colors shrink-0"
-            title="Hapus highlight (atau klik area kosong kanvas)"
-            aria-label="Tutup highlight"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* Floating Canvas Controls */}
+      {/* Floating Canvas Controls with Highlight Toggle above Zoom */}
       <CanvasControls
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
@@ -378,6 +325,11 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         isMinimapVisible={isMinimapVisible}
         onToggleMinimap={onToggleMinimap}
         zoomLevel={zoomLevel}
+        isHighlightEnabled={isHighlightEnabled}
+        onToggleHighlight={() => setIsHighlightEnabled((prev) => !prev)}
+        highlightDirection={highlightDirection}
+        onChangeHighlightDirection={setHighlightDirection}
+        selectedMemberName={selectedMember?.fullName}
       />
 
       {/* Empty State Banner if no members */}
