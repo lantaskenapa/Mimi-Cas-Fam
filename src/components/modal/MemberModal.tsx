@@ -386,16 +386,16 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             />
           </div>
 
-          {/* Bio & Notes */}
+          {/* Keterangan */}
           <div>
             <label className="text-xs font-medium text-neutral-700 block mb-1.5">
-              Catatan & Cerita Hidup
+              Keterangan
             </label>
             <textarea
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Catatan mengenai riwayat hidup, hobi, kenangan, atau pesan khusus..."
+              placeholder="Keterangan tambahan mengenai anggota keluarga..."
               className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all resize-none"
             />
           </div>

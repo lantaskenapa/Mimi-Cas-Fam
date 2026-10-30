@@ -78,50 +78,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
   return (
     <header className="h-14 bg-white border-b border-neutral-200 px-4 md:px-6 flex items-center justify-between gap-4 z-40 select-none">
-      {/* Zone 1: Brand Logo & Optional Tree Title */}
-      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+      {/* Zone 1: Brand Logo */}
+      <div className="flex items-center shrink-0">
         <img
           src="/assets/aistudio/mimi-cas-02-01-01_0747f8f8.png"
           alt="mimi - cas ; fam."
           className="h-8 md:h-9 w-auto object-contain shrink-0"
         />
-
-        {Boolean(
-          treeTitle &&
-            treeTitle.trim() &&
-            treeTitle !== 'Pohon Keluarga Besar Hadiningrat'
-        ) && (
-          <>
-            <div className="h-4 w-px bg-neutral-200 shrink-0 hidden sm:block" />
-
-            <div className="flex items-center">
-              {isEditingTitle ? (
-                <input
-                  type="text"
-                  value={currentTitle}
-                  onChange={(e) => setCurrentTitle(e.target.value)}
-                  onBlur={handleTitleSubmit}
-                  onKeyDown={(e) => e.key === 'Enter' && handleTitleSubmit()}
-                  autoFocus
-                  className="text-sm font-bold text-neutral-900 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-300 focus:outline-none"
-                />
-              ) : (
-                <div
-                  onClick={() => {
-                    setCurrentTitle(treeTitle);
-                    setIsEditingTitle(true);
-                  }}
-                  title="Klik untuk mengubah nama silsilah"
-                  className="cursor-pointer"
-                >
-                  <h1 className="text-sm font-bold text-neutral-900 tracking-tight whitespace-nowrap hover:text-neutral-600 transition-colors">
-                    {treeTitle}
-                  </h1>
-                </div>
-              )}
-            </div>
-          </>
-        )}
       </div>
 
       {/* Zone 2: Search Member in Tree (Always in header for both mobile and desktop) */}

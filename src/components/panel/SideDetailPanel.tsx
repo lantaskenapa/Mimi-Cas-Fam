@@ -181,7 +181,7 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
             <div className="pt-2 text-neutral-600 leading-relaxed bg-neutral-50 p-3 rounded-lg border border-neutral-100">
               <div className="flex items-center gap-1.5 text-neutral-400 mb-1 text-[11px] font-medium">
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>Catatan & Cerita:</span>
+                <span>Keterangan:</span>
               </div>
               <p className="whitespace-pre-line text-[12px] text-neutral-700">
                 {member.notes}
