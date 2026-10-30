@@ -33,9 +33,12 @@
   background: #a3a3a3;
 }
 
-/* React Flow customizations for minimalist Figma/Notion vibe */
+/* React Flow customizations for minimalist Figma/Notion vibe & smooth touch dragging */
 .react-flow__pane {
   cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .react-flow__pane:active {
@@ -43,7 +46,14 @@
 }
 
 .react-flow__node {
-  cursor: default;
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.react-flow__node:active {
+  cursor: grabbing;
 }
 
 .react-flow__handle {

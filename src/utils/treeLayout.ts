@@ -3,10 +3,10 @@ import { Node, Edge, MarkerType } from '@xyflow/react';
 
 export const CARD_WIDTH = 150;
 export const CARD_HEIGHT = 160;
-export const SPOUSE_GAP = 64;
-export const SIBLING_GAP = 48;
-export const FAMILY_GAP = 80;
-export const VERTICAL_GAP = 120;
+export const SPOUSE_GAP = 56;
+export const SIBLING_GAP = 40;
+export const FAMILY_GAP = 96;
+export const VERTICAL_GAP = 140;
 
 /**
  * Calculates hierarchical generation levels for all members.
@@ -172,6 +172,22 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
 
   sortedGens.forEach((gen) => {
     const units = unitsByGen.get(gen) || [];
+
+    // Sort units in generation by parent horizontal midpoint to keep family branches cleanly separated
+    units.sort((a, b) => {
+      const aParentUnits = a.parentIds.map((pId) => unitMap.get(pId)).filter(Boolean) as FamilyUnit[];
+      const bParentUnits = b.parentIds.map((pId) => unitMap.get(pId)).filter(Boolean) as FamilyUnit[];
+
+      const aParentX = aParentUnits.length > 0
+        ? aParentUnits.reduce((sum, pu) => sum + (pu.x + pu.unitWidth / 2), 0) / aParentUnits.length
+        : a.x;
+      const bParentX = bParentUnits.length > 0
+        ? bParentUnits.reduce((sum, pu) => sum + (pu.x + pu.unitWidth / 2), 0) / bParentUnits.length
+        : b.x;
+
+      return aParentX - bParentX;
+    });
+
     let currentX = 60;
 
     units.forEach((unit) => {
@@ -335,6 +351,143 @@ function shiftDescendantUnits(
   });
 }
 
+export type HighlightDirection = 'ancestors' | 'descendants';
+
+/**
+ * Traverses lineage strictly in a single direction (ancestors upward OR descendants downward).
+ * Does not include siblings or unrelated family branches.
+ * Spouses are included as connectors.
+ */
+export function computeLineageHighlight(
+  members: FamilyMember[],
+  selectedMemberId: string | null,
+  direction: HighlightDirection = 'ancestors'
+): {
+  highlightedMemberIds: Set<string>;
+  highlightedEdgeIds: Set<string>;
+} {
+  const highlightedMemberIds = new Set<string>();
+  const highlightedEdgeIds = new Set<string>();
+
+  if (!selectedMemberId) {
+    return { highlightedMemberIds, highlightedEdgeIds };
+  }
+
+  const memberMap = new Map<string, FamilyMember>();
+  members.forEach((m) => memberMap.set(m.id, m));
+
+  const target = memberMap.get(selectedMemberId);
+  if (!target) {
+    return { highlightedMemberIds, highlightedEdgeIds };
+  }
+
+  highlightedMemberIds.add(target.id);
+
+  if (direction === 'ancestors') {
+    // Traverse UPWARDS only: parents, grandparents, great-grandparents...
+    const queue: string[] = [target.id];
+    const visited = new Set<string>([target.id]);
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      const current = memberMap.get(currentId);
+      if (!current) continue;
+
+      const parentIds = current.parentIds || [];
+      if (parentIds.length === 0) continue;
+
+      const validParents = parentIds
+        .map((pId) => memberMap.get(pId))
+        .filter((p): p is FamilyMember => Boolean(p));
+
+      let unionKey = '';
+      if (validParents.length >= 2) {
+        const p1 = validParents[0];
+        const p2 = validParents[1];
+        unionKey = [p1.id, p2.id].sort().join('--');
+        highlightedMemberIds.add(p1.id);
+        highlightedMemberIds.add(p2.id);
+
+        // Highlight spouse connection between parents
+        const pairKey = [p1.id, p2.id].sort().join('--');
+        highlightedEdgeIds.add(`spouse-${pairKey}`);
+
+        if (!visited.has(p1.id)) {
+          visited.add(p1.id);
+          queue.push(p1.id);
+        }
+        if (!visited.has(p2.id)) {
+          visited.add(p2.id);
+          queue.push(p2.id);
+        }
+      } else if (validParents.length === 1) {
+        const p1 = validParents[0];
+        unionKey = `single--${p1.id}`;
+        highlightedMemberIds.add(p1.id);
+
+        if (!visited.has(p1.id)) {
+          visited.add(p1.id);
+          queue.push(p1.id);
+        }
+      }
+
+      if (unionKey) {
+        highlightedEdgeIds.add(`branch-${unionKey}-child-${current.id}`);
+      }
+    }
+  } else {
+    // Traverse DOWNWARDS only: children, grandchildren, great-grandchildren...
+    const queue: string[] = [target.id];
+    const visited = new Set<string>([target.id]);
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      const current = memberMap.get(currentId);
+      if (!current) continue;
+
+      const childrenIds = current.childrenIds || [];
+      for (const childId of childrenIds) {
+        const child = memberMap.get(childId);
+        if (!child) continue;
+
+        highlightedMemberIds.add(child.id);
+
+        const validParents = (child.parentIds || [])
+          .map((pId) => memberMap.get(pId))
+          .filter((p): p is FamilyMember => Boolean(p));
+
+        let unionKey = '';
+        if (validParents.length >= 2) {
+          const p1 = validParents[0];
+          const p2 = validParents[1];
+          unionKey = [p1.id, p2.id].sort().join('--');
+
+          // Highlight co-parent and spouse connection if married
+          const otherParent = validParents.find((p) => p.id !== current.id);
+          if (otherParent && current.spouseIds?.includes(otherParent.id)) {
+            highlightedMemberIds.add(otherParent.id);
+            const pairKey = [current.id, otherParent.id].sort().join('--');
+            highlightedEdgeIds.add(`spouse-${pairKey}`);
+          }
+        } else if (validParents.length === 1) {
+          unionKey = `single--${validParents[0].id}`;
+        }
+
+        if (unionKey) {
+          highlightedEdgeIds.add(`branch-${unionKey}-child-${child.id}`);
+        }
+
+        if (!visited.has(child.id)) {
+          visited.add(child.id);
+          queue.push(child.id);
+        }
+      }
+    }
+  }
+
+  return { highlightedMemberIds, highlightedEdgeIds };
+}
+
 /**
  * Creates React Flow nodes and edges from FamilyMember list
  */
@@ -351,22 +504,38 @@ export function buildFlowElements(
     onEdit: (m: FamilyMember) => void;
     onDelete: (m: FamilyMember) => void;
   },
-  isDragging = false
+  isDragging = false,
+  highlightDirection: HighlightDirection = 'ancestors'
 ) {
   const memberMap = new Map<string, FamilyMember>();
   members.forEach((m) => memberMap.set(m.id, m));
 
-  const nodes: Node[] = members.map((member) => ({
-    id: member.id,
-    type: 'familyNode',
-    position: member.position,
-    zIndex: member.id === selectedMemberId ? 1000 : 1,
-    data: {
-      member,
-      isSelected: member.id === selectedMemberId,
-      ...callbacks,
-    },
-  }));
+  const { highlightedMemberIds, highlightedEdgeIds } = computeLineageHighlight(
+    members,
+    selectedMemberId,
+    highlightDirection
+  );
+  const hasActiveSelection = Boolean(selectedMemberId);
+
+  const nodes: Node[] = members.map((member) => {
+    const isSelected = member.id === selectedMemberId;
+    const isHighlighted = highlightedMemberIds.has(member.id);
+    const isDimmed = hasActiveSelection && !isHighlighted;
+
+    return {
+      id: member.id,
+      type: 'familyNode',
+      position: member.position,
+      zIndex: isSelected ? 1000 : isHighlighted ? 500 : 1,
+      data: {
+        member,
+        isSelected,
+        isHighlighted,
+        isDimmed,
+        ...callbacks,
+      },
+    };
+  });
 
   const edges: Edge[] = [];
   const processedSpousePairs = new Set<string>();
@@ -381,17 +550,29 @@ export function buildFlowElements(
       if (processedSpousePairs.has(pairKey)) return;
       processedSpousePairs.add(pairKey);
 
+      const edgeId = `spouse-${pairKey}`;
+      const isHighlighted = highlightedEdgeIds.has(edgeId);
+      const isDimmed = hasActiveSelection && !isHighlighted;
+
       const isSourceLeft = member.position.x <= spouse.position.x;
       edges.push({
-        id: `spouse-${pairKey}`,
+        id: edgeId,
         source: isSourceLeft ? member.id : spouseId,
         target: isSourceLeft ? spouseId : member.id,
         sourceHandle: 'right',
         targetHandle: 'left',
         type: 'spouseEdge',
         animated: false,
+        zIndex: isHighlighted ? 100 : 1,
         data: {
           isDragging,
+          isHighlighted,
+          isDimmed,
+        },
+        style: {
+          stroke: isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#a3a3a3',
+          strokeWidth: isHighlighted ? 2.5 : isDimmed ? 1.2 : 1.25,
+          opacity: isDimmed ? 0.22 : 1,
         },
       });
     });
@@ -433,7 +614,23 @@ export function buildFlowElements(
     }
   });
 
-  // Create exactly ONE genealogical branching edge per child
+  // 3. Multi-track collision-free branch routing for all family unions
+  interface FamilyUnion {
+    unionKey: string;
+    parent1: FamilyMember;
+    parent2?: FamilyMember;
+    children: FamilyMember[];
+    midX: number;
+    midY: number;
+    maxParentBottom: number;
+    minChildTop: number;
+    minX: number;
+    maxX: number;
+    busY: number;
+  }
+
+  const unionList: FamilyUnion[] = [];
+
   unionChildrenMap.forEach(({ parent1, parent2, children }, unionKey) => {
     let midX: number;
     let midY: number;
@@ -453,25 +650,116 @@ export function buildFlowElements(
       parent2 ? parent2.position.y + CARD_HEIGHT : 0
     );
     const minChildTop = Math.min(...children.map((c) => c.position.y));
-    const busY =
-      minChildTop > maxParentBottom + 40
-        ? Math.round(maxParentBottom + (minChildTop - maxParentBottom) * 0.45)
-        : maxParentBottom + 35;
 
-    const obstacles = members.map((m) => ({
-      id: m.id,
-      x: m.position.x,
-      y: m.position.y,
-    }));
+    // Horizontal bounds of this family's child bus
+    const childCentersX = children.map((c) => c.position.x + CARD_WIDTH / 2);
+    const minX = Math.min(midX, ...childCentersX);
+    const maxX = Math.max(midX, ...childCentersX);
+
+    unionList.push({
+      unionKey,
+      parent1,
+      parent2,
+      children,
+      midX,
+      midY,
+      maxParentBottom,
+      minChildTop,
+      minX,
+      maxX,
+      busY: 0,
+    });
+  });
+
+  // Sort unions by generation tier (maxParentBottom) and then left-to-right (midX)
+  unionList.sort((a, b) => {
+    if (Math.abs(a.maxParentBottom - b.maxParentBottom) > 50) {
+      return a.maxParentBottom - b.maxParentBottom;
+    }
+    return a.midX - b.midX;
+  });
+
+  // Assign distinct, non-overlapping bus Y altitudes for each family branch
+  const allocatedBusBands: Array<{ minX: number; maxX: number; busY: number; tierY: number }> = [];
+
+  unionList.forEach((union) => {
+    const gap = union.minChildTop - union.maxParentBottom;
+    const baseBusY =
+      gap > 50
+        ? Math.round(union.maxParentBottom + gap * 0.45)
+        : union.maxParentBottom + 35;
+
+    // Track slots with 18px separation: 0, +18, -18, +36, -36
+    const trackOffsets = [0, 18, -18, 36, -36, 54, -54];
+    let chosenBusY = baseBusY;
+
+    for (const offset of trackOffsets) {
+      const candidateBusY = baseBusY + offset;
+
+      // Safe margin >= 22px from parent bottom and child top
+      if (
+        candidateBusY < union.maxParentBottom + 22 ||
+        candidateBusY > union.minChildTop - 22
+      ) {
+        continue;
+      }
+
+      // Check for collision with any other family's bus in this generation tier
+      const hasCollision = allocatedBusBands.some((allocated) => {
+        // Are they in the same generation vertical tier?
+        const sameTier = Math.abs(allocated.tierY - union.maxParentBottom) < 60;
+        if (!sameTier) return false;
+
+        // Is the bus altitude too close (< 14px)?
+        const altitudeTooClose = Math.abs(allocated.busY - candidateBusY) < 14;
+        if (!altitudeTooClose) return false;
+
+        // Do their horizontal spans overlap or come within 32px of each other?
+        const horizontalOverlap = !(
+          union.maxX + 32 < allocated.minX || union.minX - 32 > allocated.maxX
+        );
+
+        return horizontalOverlap;
+      });
+
+      if (!hasCollision) {
+        chosenBusY = candidateBusY;
+        break;
+      }
+    }
+
+    union.busY = chosenBusY;
+    allocatedBusBands.push({
+      minX: union.minX,
+      maxX: union.maxX,
+      busY: chosenBusY,
+      tierY: union.maxParentBottom,
+    });
+  });
+
+  const obstacles = members.map((m) => ({
+    id: m.id,
+    x: m.position.x,
+    y: m.position.y,
+  }));
+
+  // Create exactly ONE genealogical branching edge per child
+  unionList.forEach((union) => {
+    const { parent1, parent2, children, unionKey, midX, midY, busY } = union;
 
     children.forEach((child, index) => {
+      const edgeId = `branch-${unionKey}-child-${child.id}`;
+      const isHighlighted = highlightedEdgeIds.has(edgeId);
+      const isDimmed = hasActiveSelection && !isHighlighted;
+
       edges.push({
-        id: `branch-${unionKey}-child-${child.id}`,
+        id: edgeId,
         source: parent1.id,
         target: child.id,
         sourceHandle: 'bottom',
         targetHandle: 'top',
         type: 'parentChildBranchEdge',
+        zIndex: isHighlighted ? 100 : 1,
         data: {
           parent1Id: parent1.id,
           parent2Id: parent2?.id,
@@ -484,16 +772,19 @@ export function buildFlowElements(
           siblingCount: children.length,
           obstacles,
           isDragging,
+          isHighlighted,
+          isDimmed,
         },
         style: {
-          stroke: '#94a3b8',
-          strokeWidth: 1.5,
+          stroke: isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#94a3b8',
+          strokeWidth: isHighlighted ? 2.75 : isDimmed ? 1.2 : 1.5,
+          opacity: isDimmed ? 0.22 : 1,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          width: 7,
-          height: 7,
-          color: '#94a3b8',
+          width: isHighlighted ? 8 : 7,
+          height: isHighlighted ? 8 : 7,
+          color: isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#94a3b8',
         },
       });
     });

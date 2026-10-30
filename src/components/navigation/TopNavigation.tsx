@@ -85,8 +85,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
       {/* Zone 1: Brand Logo & Optional Tree Title */}
       <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
         <img
-          src="/assets/aistudio/mimi-cas-01_e528e82d.png"
-          alt="Mimi Cas Fams"
+          src="/assets/aistudio/mimi-cas-02-01-01_0747f8f8.png"
+          alt="mimi - cas ; fam."
           className="h-8 md:h-9 w-auto object-contain shrink-0"
         />
 

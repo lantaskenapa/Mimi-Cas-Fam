@@ -13,12 +13,13 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { FamilyMember } from '../../types/family';
-import { buildFlowElements } from '../../utils/treeLayout';
+import { buildFlowElements, HighlightDirection } from '../../utils/treeLayout';
 import { FamilyNode } from './FamilyNode';
 import { SpouseEdge } from './SpouseEdge';
 import { ParentChildBranchEdge } from './ParentChildBranchEdge';
 import { CanvasControls } from './CanvasControls';
 import { toPng } from 'html-to-image';
+import { X } from 'lucide-react';
 
 interface FamilyTreeCanvasProps {
   members: FamilyMember[];
@@ -74,54 +75,26 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [isDraggingNode, setIsDraggingNode] = useState<boolean>(false);
+  const [highlightDirection, setHighlightDirection] = useState<HighlightDirection>('ancestors');
 
-  const onNodeDragStart = useCallback(() => {
-    setIsDraggingNode(true);
-  }, []);
-
-  const onNodeDragStop = useCallback(
-    (_event: any, node: any) => {
-      setIsDraggingNode(false);
-      if (!node || !node.id || !node.position) return;
-
-      const CARD_W = 150;
-      const CARD_H = 160;
-      const MIN_GAP = 24;
-
-      // Automatic card collision separation to maintain >= 20px safe distance
-      let adjustedX = node.position.x;
-      let adjustedY = node.position.y;
-      let hadCollision = false;
-
-      for (const m of members) {
-        if (m.id === node.id) continue;
-        const dx = adjustedX - m.position.x;
-        const dy = adjustedY - m.position.y;
-
-        const overlapX = CARD_W + MIN_GAP - Math.abs(dx);
-        const overlapY = CARD_H + MIN_GAP - Math.abs(dy);
-
-        if (overlapX > 0 && overlapY > 0) {
-          hadCollision = true;
-          if (overlapX < overlapY) {
-            adjustedX += dx >= 0 ? overlapX : -overlapX;
-          } else {
-            adjustedY += dy >= 0 ? overlapY : -overlapY;
-          }
-        }
-      }
-
-      if (hadCollision) {
-        onUpdateMemberPosition(node.id, {
-          x: Math.round(adjustedX),
-          y: Math.round(adjustedY),
-        });
-      }
-    },
-    [members, onUpdateMemberPosition]
+  const selectedMember = useMemo(
+    () => members.find((m) => m.id === selectedMemberId),
+    [members, selectedMemberId]
   );
 
-  // Generate nodes and edges with callbacks
+  // Smart default direction based on whether selected member has parents or children
+  useEffect(() => {
+    if (!selectedMemberId) return;
+    const member = members.find((m) => m.id === selectedMemberId);
+    if (!member) return;
+    if ((!member.parentIds || member.parentIds.length === 0) && member.childrenIds && member.childrenIds.length > 0) {
+      setHighlightDirection('descendants');
+    } else if (member.parentIds && member.parentIds.length > 0 && (!member.childrenIds || member.childrenIds.length === 0)) {
+      setHighlightDirection('ancestors');
+    }
+  }, [selectedMemberId, members]);
+
+  // Generate nodes and edges with callbacks and relationship highlight direction
   const { nodes: initialNodes, edges } = useMemo(() => {
     return buildFlowElements(
       members,
@@ -136,7 +109,8 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         onEdit,
         onDelete,
       },
-      isDraggingNode
+      isDraggingNode,
+      highlightDirection
     );
   }, [
     members,
@@ -150,18 +124,74 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
     onEdit,
     onDelete,
     isDraggingNode,
+    highlightDirection,
   ]);
 
-  // Node position drag handler
+  // Local nodes state ensures 60fps/120fps smooth hardware dragging on touch/mobile
+  const [nodes, setNodes] = useState<any[]>(initialNodes);
+
+  // Sync internal nodes when initialNodes changes from props (only when not actively dragging)
+  useEffect(() => {
+    if (!isDraggingNode) {
+      setNodes(initialNodes);
+    }
+  }, [initialNodes, isDraggingNode]);
+
+  const onNodeDragStart = useCallback(() => {
+    setIsDraggingNode(true);
+  }, []);
+
+  // Update local node positions instantly without serializing localStorage on every pointer event
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      changes.forEach((change) => {
-        if (change.type === 'position' && change.position && change.id) {
-          onUpdateMemberPosition(change.id, change.position);
-        }
-      });
+      setNodes((nds) => applyNodeChanges(changes, nds));
     },
-    [onUpdateMemberPosition]
+    []
+  );
+
+  const onNodeDragStop = useCallback(
+    (_event: any, node: any) => {
+      setIsDraggingNode(false);
+      if (!node || !node.id || !node.position) return;
+
+      const CARD_W = 150;
+      const CARD_H = 160;
+      const MIN_GAP = 24;
+
+      // Automatic card collision separation to maintain >= 20px safe distance
+      let adjustedX = node.position.x;
+      let adjustedY = node.position.y;
+
+      for (const m of members) {
+        if (m.id === node.id) continue;
+        const dx = adjustedX - m.position.x;
+        const dy = adjustedY - m.position.y;
+
+        const overlapX = CARD_W + MIN_GAP - Math.abs(dx);
+        const overlapY = CARD_H + MIN_GAP - Math.abs(dy);
+
+        if (overlapX > 0 && overlapY > 0) {
+          if (overlapX < overlapY) {
+            adjustedX += dx >= 0 ? overlapX : -overlapX;
+          } else {
+            adjustedY += dy >= 0 ? overlapY : -overlapY;
+          }
+        }
+      }
+
+      const finalPos = {
+        x: Math.round(adjustedX),
+        y: Math.round(adjustedY),
+      };
+
+      setNodes((nds) =>
+        nds.map((n) => (n.id === node.id ? { ...n, position: finalPos } : n))
+      );
+
+      // Commit to parent dataset upon drag finish
+      onUpdateMemberPosition(node.id, finalPos);
+    },
+    [members, onUpdateMemberPosition]
   );
 
   const handlePaneClick = useCallback(() => {
@@ -233,9 +263,9 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
 
   // Initial fit view on mount handled cleanly via fitViewOptions on ReactFlow
   return (
-    <div ref={reactFlowWrapper} className="w-full h-full relative bg-neutral-50">
+    <div ref={reactFlowWrapper} className="w-full h-full relative bg-neutral-50 touch-none select-none">
       <ReactFlow
-        nodes={initialNodes}
+        nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -248,11 +278,20 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         fitViewOptions={{ padding: 0.25 }}
         minZoom={0.2}
         maxZoom={2.5}
+        panOnDrag={true}
+        nodesDraggable={true}
+        nodesConnectable={false}
+        elementsSelectable={true}
+        selectNodesOnDrag={false}
+        preventScrolling={true}
+        zoomOnPinch={true}
+        zoomOnScroll={true}
+        zoomOnDoubleClick={false}
         defaultEdgeOptions={{
           type: 'smoothstep',
         }}
         proOptions={{ hideAttribution: true }}
-        className="touch-none"
+        className="touch-none select-none"
       >
         {/* Subtle ultra-thin grid background as requested */}
         <Background
@@ -273,6 +312,62 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
           />
         )}
       </ReactFlow>
+
+      {/* Floating Relationship Highlight Controller */}
+      {selectedMember && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 bg-white/95 backdrop-blur-md border border-neutral-200/90 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-neutral-700 animate-in fade-in slide-in-from-top-3 duration-200 select-none max-w-[94vw]">
+          <div className="flex items-center gap-1.5 shrink-0 pl-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-semibold text-neutral-900 max-w-[90px] sm:max-w-[130px] truncate" title={selectedMember.fullName}>
+              {selectedMember.fullName}
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-neutral-200 shrink-0" />
+
+          {/* Direction Segmented Toggle Buttons */}
+          <div className="flex items-center bg-neutral-100 p-0.5 rounded-xl text-xs font-medium shrink-0">
+            <button
+              onClick={() => setHighlightDirection('ancestors')}
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 text-xs ${
+                highlightDirection === 'ancestors'
+                  ? 'bg-neutral-900 text-white shadow-xs font-semibold'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+              title="Tampilkan silsilah ke atas (Orang tua, kakek, nenek...)"
+            >
+              <span>⬆️</span>
+              <span className="hidden sm:inline">Leluhur</span>
+              <span className="sm:hidden">Atas</span>
+            </button>
+            <button
+              onClick={() => setHighlightDirection('descendants')}
+              className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 text-xs ${
+                highlightDirection === 'descendants'
+                  ? 'bg-neutral-900 text-white shadow-xs font-semibold'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+              title="Tampilkan garis keturunan ke bawah (Anak, cucu...)"
+            >
+              <span>⬇️</span>
+              <span className="hidden sm:inline">Keturunan</span>
+              <span className="sm:hidden">Bawah</span>
+            </button>
+          </div>
+
+          <div className="h-4 w-px bg-neutral-200 shrink-0" />
+
+          {/* Clear highlight button */}
+          <button
+            onClick={() => onSelectMember(null)}
+            className="p-1 rounded-lg text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 transition-colors shrink-0"
+            title="Hapus highlight (atau klik area kosong kanvas)"
+            aria-label="Tutup highlight"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Floating Canvas Controls */}
       <CanvasControls

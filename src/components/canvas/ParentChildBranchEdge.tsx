@@ -142,6 +142,18 @@ export const ParentChildBranchEdge: React.FC<EdgeProps> = ({
       }
     }
 
+    // Check if vertical trunk from (startX, startY) to (startX, busY) hits an obstacle card
+    const trunkBlocker = obstacles.find((o) => {
+      if (o.id === source || o.id === branchData.parent2Id || o.id === target) return false;
+      const oLeft = o.x - SAFE_MARGIN;
+      const oRight = o.x + CARD_W + SAFE_MARGIN;
+      const oTop = o.y - SAFE_MARGIN;
+      const oBottom = o.y + CARD_H + SAFE_MARGIN;
+      const tMin = Math.min(startY, busY);
+      const tMax = Math.max(startY, busY);
+      return startX >= oLeft && startX <= oRight && !(tMax < oTop || tMin > oBottom);
+    });
+
     // Check if vertical drop from (endX, busY) to (endX, endY) hits an obstacle card
     const vMin = Math.min(busY, endY);
     const vMax = Math.max(busY, endY);
@@ -155,7 +167,14 @@ export const ParentChildBranchEdge: React.FC<EdgeProps> = ({
       return endX >= oLeft && endX <= oRight && !(vMax < oTop || vMin > oBottom);
     });
 
-    if (verticalBlocker) {
+    if (trunkBlocker) {
+      const detourTrunkX =
+        startX < trunkBlocker.x + CARD_W / 2
+          ? trunkBlocker.x - SAFE_MARGIN
+          : trunkBlocker.x + CARD_W + SAFE_MARGIN;
+      const detourTrunkY = trunkBlocker.y + CARD_H + SAFE_MARGIN;
+      path = `M ${startX} ${startY} L ${detourTrunkX} ${startY} L ${detourTrunkX} ${detourTrunkY} L ${startX} ${detourTrunkY} L ${startX} ${busY} L ${endX} ${busY} L ${endX} ${endY}`;
+    } else if (verticalBlocker) {
       // Obstacle-aware orthogonal detour around the blocking card
       const detourX =
         endX < verticalBlocker.x + CARD_W / 2
@@ -180,16 +199,20 @@ export const ParentChildBranchEdge: React.FC<EdgeProps> = ({
     Boolean(branchData.siblingCount && branchData.siblingCount > 1) &&
     branchData.siblingIndex === 0;
 
+  const isHighlighted = Boolean((data as any)?.isHighlighted);
+  const isDimmed = Boolean((data as any)?.isDimmed);
+
   return (
     <>
       <BaseEdge
         id={id}
         path={path}
         style={{
-          stroke: '#94a3b8',
-          strokeWidth: 1.5,
+          stroke: isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#94a3b8',
+          strokeWidth: isHighlighted ? 2.75 : isDimmed ? 1.2 : 1.5,
           strokeLinecap: 'square',
           strokeLinejoin: 'miter',
+          opacity: isDimmed ? 0.22 : 1,
           ...style,
         }}
         markerEnd={markerEnd}
@@ -199,9 +222,10 @@ export const ParentChildBranchEdge: React.FC<EdgeProps> = ({
         <circle
           cx={startX}
           cy={busY}
-          r={3}
-          fill="#64748b"
-          className="pointer-events-none select-none transition-opacity"
+          r={isHighlighted ? 3.5 : 3}
+          fill={isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#64748b'}
+          opacity={isDimmed ? 0.22 : 1}
+          className="pointer-events-none select-none transition-all"
         />
       )}
     </>

@@ -84,6 +84,9 @@ export const SpouseEdge: React.FC<EdgeProps> = ({
     }
   }
 
+  const isHighlighted = Boolean((data as any)?.isHighlighted);
+  const isDimmed = Boolean((data as any)?.isDimmed);
+
   return (
     <>
       {path && (
@@ -91,8 +94,9 @@ export const SpouseEdge: React.FC<EdgeProps> = ({
           id={id}
           path={path}
           style={{
-            stroke: '#a3a3a3',
-            strokeWidth: 1.25,
+            stroke: isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#a3a3a3',
+            strokeWidth: isHighlighted ? 2.5 : isDimmed ? 1.2 : 1.25,
+            opacity: isDimmed ? 0.22 : 1,
             strokeLinecap: 'round',
             ...style,
           }}
@@ -108,8 +112,24 @@ export const SpouseEdge: React.FC<EdgeProps> = ({
         y={midY - 13}
         className="pointer-events-none select-none overflow-visible"
       >
-        <div className="w-[26px] h-[26px] rounded-full bg-white border border-rose-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.06)] flex items-center justify-center text-rose-500">
-          <Heart className="w-3.5 h-3.5 fill-rose-500 stroke-rose-600" />
+        <div
+          className={`w-[26px] h-[26px] rounded-full bg-white border flex items-center justify-center transition-all ${
+            isHighlighted
+              ? 'border-neutral-900 shadow-md ring-2 ring-neutral-900/15 text-rose-600 scale-105 opacity-100'
+              : isDimmed
+              ? 'border-neutral-200/50 opacity-20 text-rose-300'
+              : 'border-rose-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.06)] text-rose-500 opacity-100'
+          }`}
+        >
+          <Heart
+            className={`w-3.5 h-3.5 ${
+              isHighlighted
+                ? 'fill-rose-600 stroke-rose-700'
+                : isDimmed
+                ? 'fill-rose-300/40 stroke-rose-300'
+                : 'fill-rose-500 stroke-rose-600'
+            }`}
+          />
         </div>
       </foreignObject>
     </>

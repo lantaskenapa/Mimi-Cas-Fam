@@ -14,6 +14,8 @@ import {
 export interface FamilyNodeData {
   member: FamilyMember;
   isSelected?: boolean;
+  isHighlighted?: boolean;
+  isDimmed?: boolean;
   onSelect: (member: FamilyMember) => void;
   onOpenDetail: (member: FamilyMember) => void;
   onAddSpouse: (member: FamilyMember) => void;
@@ -26,7 +28,9 @@ export interface FamilyNodeData {
 
 export const FamilyNode = memo(({ data }: NodeProps<any>) => {
   const member: FamilyMember = data.member;
-  const isSelected = data.isSelected;
+  const isSelected = Boolean(data.isSelected);
+  const isHighlighted = Boolean(data.isHighlighted);
+  const isDimmed = Boolean(data.isDimmed);
   const alreadyMarried = member.spouseIds && member.spouseIds.length >= 1;
 
   // Format year strictly as requested:
@@ -55,7 +59,7 @@ export const FamilyNode = memo(({ data }: NodeProps<any>) => {
   const isFemale = member.gender === 'female';
 
   return (
-    <div className={isSelected ? 'relative z-[1000]' : 'relative z-0'}>
+    <div className={isSelected ? 'relative z-[1000]' : isHighlighted ? 'relative z-[500]' : 'relative z-0'}>
       {/* Vertical Contextual Action Menu when card is clicked / selected */}
       {isSelected && (
         <div
@@ -139,9 +143,13 @@ export const FamilyNode = memo(({ data }: NodeProps<any>) => {
       {/* Main Family Card: Vertical box with modern rounded corners */}
       <div
         onClick={() => data.onSelect(member)}
-        className={`group relative w-[150px] min-h-[160px] bg-white rounded-2xl transition-all duration-200 cursor-pointer select-none p-3.5 flex flex-col items-center justify-center text-center ${
+        className={`group relative w-[150px] min-h-[160px] bg-white rounded-2xl transition-all duration-200 cursor-pointer select-none touch-none p-3.5 flex flex-col items-center justify-center text-center ${
           isSelected
-            ? 'ring-2 ring-neutral-900 shadow-[0_12px_32px_-4px_rgba(0,0,0,0.14),0_4px_12px_-2px_rgba(0,0,0,0.06)] border-neutral-400'
+            ? 'ring-2 ring-neutral-900 shadow-[0_12px_32px_-4px_rgba(0,0,0,0.18),0_4px_12px_-2px_rgba(0,0,0,0.08)] border-neutral-900 scale-[1.02]'
+            : isHighlighted
+            ? 'ring-2 ring-neutral-900/60 border-neutral-800 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.12)] scale-[1.01]'
+            : isDimmed
+            ? 'border border-neutral-200/50 opacity-30 grayscale-[35%] hover:opacity-75 transition-opacity'
             : 'border border-neutral-200/90 hover:border-neutral-300 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.06),0_2px_4px_-1px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.09),0_3px_8px_-1px_rgba(0,0,0,0.04)]'
         }`}
       >
