@@ -68,10 +68,16 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
   };
 
   return (
-    <aside
-      className="fixed top-14 right-0 bottom-0 w-80 md:w-96 bg-white border-l border-neutral-200 shadow-xl z-30 flex flex-col transition-transform duration-300 ease-out select-none"
-      aria-label="Detail Anggota Keluarga"
-    >
+    <>
+      {/* Mobile backdrop */}
+      <div
+        className="fixed inset-0 bg-neutral-900/30 backdrop-blur-2xs z-30 sm:hidden"
+        onClick={onClose}
+      />
+      <aside
+        className="fixed top-14 right-0 bottom-0 w-full sm:w-80 md:w-96 max-w-full bg-white border-l border-neutral-200 shadow-xl z-35 flex flex-col transition-transform duration-300 ease-out select-none"
+        aria-label="Detail Anggota Keluarga"
+      >
       {/* Top Header */}
       <div className="px-5 py-3.5 border-b border-neutral-100 flex items-center justify-between bg-neutral-50/50">
         <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
@@ -380,5 +386,6 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
         </button>
       </div>
     </aside>
+    </>
   );
 };

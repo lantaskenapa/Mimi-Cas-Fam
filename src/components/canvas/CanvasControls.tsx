@@ -28,7 +28,7 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   zoomLevel = 1,
 }) => {
   return (
-    <div className="fixed bottom-6 right-6 z-20 flex items-center gap-1.5 p-1 bg-white/95 backdrop-blur-md rounded-xl border border-neutral-200 shadow-md text-neutral-600 select-none">
+    <div className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 z-20 flex items-center gap-1 sm:gap-1.5 p-1 bg-white/95 backdrop-blur-md rounded-xl border border-neutral-200 shadow-md text-neutral-600 select-none scale-90 sm:scale-100 origin-bottom-right">
       {/* Zoom Out */}
       <button
         onClick={onZoomOut}

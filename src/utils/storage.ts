@@ -2,11 +2,11 @@ import { FamilyMember, FamilyTreeDataset } from '../types/family';
 import { INITIAL_MEMBERS } from '../data/initialData';
 import { autoArrangeTree } from './treeLayout';
 
-const STORAGE_KEY = 'kintree_family_data_v3';
+const STORAGE_KEY = 'kintree_family_data_v4';
 
 export const DEFAULT_DATASET: FamilyTreeDataset = {
   meta: {
-    title: 'Pohon Keluarga Besar Hadiningrat',
+    title: '',
     description: 'Dokumentasi silsilah keluarga besar multi generasi.',
     lastModified: new Date().toISOString(),
   },
@@ -21,6 +21,9 @@ export function loadSavedTreeData(): FamilyTreeDataset {
     }
     const parsed = JSON.parse(raw);
     if (parsed && Array.isArray(parsed.members)) {
+      if (parsed.meta?.title === 'Pohon Keluarga Besar Hadiningrat') {
+        parsed.meta.title = '';
+      }
       return parsed;
     }
     return DEFAULT_DATASET;

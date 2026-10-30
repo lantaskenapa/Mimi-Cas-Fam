@@ -2,19 +2,23 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-// Suppress benign browser ResizeObserver loop undelivered notifications
+// Suppress benign browser origin trial, unrecognized feature, config, and ResizeObserver notifications
 if (typeof window !== 'undefined') {
-  const isResizeObserverError = (msg?: string) =>
+  const isBenignNotice = (msg?: string) =>
     Boolean(
       msg &&
         (msg.includes('ResizeObserver loop completed with undelivered notifications') ||
-          msg.includes('ResizeObserver loop limit exceeded'))
+          msg.includes('ResizeObserver loop limit exceeded') ||
+          msg.includes("Origin trial controlled feature not enabled: 'writer'") ||
+          msg.includes("Origin trial controlled feature not enabled: 'rewriter'") ||
+          msg.includes("Unrecognized feature: 'proofreader'") ||
+          msg.includes('No ID or name found in config'))
     );
 
   window.addEventListener(
     'error',
     (e) => {
-      if (isResizeObserverError(e.message)) {
+      if (isBenignNotice(e.message)) {
         e.stopImmediatePropagation();
         e.stopPropagation();
         e.preventDefault();
@@ -23,12 +27,20 @@ if (typeof window !== 'undefined') {
     true
   );
 
-  const originalConsoleError = console.error;
+  const origError = console.error;
   console.error = (...args: any[]) => {
-    if (args.some((arg) => typeof arg === 'string' && isResizeObserverError(arg))) {
+    if (args.some((arg) => typeof arg === 'string' && isBenignNotice(arg))) {
       return;
     }
-    originalConsoleError.apply(console, args);
+    origError.apply(console, args);
+  };
+
+  const origWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    if (args.some((arg) => typeof arg === 'string' && isBenignNotice(arg))) {
+      return;
+    }
+    origWarn.apply(console, args);
   };
 }
 

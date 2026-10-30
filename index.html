@@ -9,23 +9,58 @@
     <meta property="og:description" content="Pohon keluarga interaktif digital dengan desain minimalis modern, canvas drag and drop, relasi keluarga otomatis, dan ekspor pohon." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/png" href="/assets/aistudio/mimi-cas-nav-01_8e8cb264.png" />
+    <link rel="apple-touch-icon" href="/assets/aistudio/mimi-cas-nav-01_8e8cb264.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <meta name="applet-id" content="527db40a-d387-4de4-bbb4-cb014ccf543e" />
+    <meta name="applet-name" content="KinTree - Interactive Family Tree" />
     <script>
-      window.addEventListener('error', function (e) {
-        if (
-          e &&
-          e.message &&
-          (e.message.indexOf('ResizeObserver loop completed with undelivered notifications') !== -1 ||
-            e.message.indexOf('ResizeObserver loop limit exceeded') !== -1)
-        ) {
-          e.stopImmediatePropagation();
-          e.stopPropagation();
-          e.preventDefault();
-          return true;
+      // Define config expected by AI Studio preview wrapper scripts
+      window.__AI_STUDIO_CONFIG__ = { id: '527db40a-d387-4de4-bbb4-cb014ccf543e', name: 'KinTree - Interactive Family Tree' };
+      window.__APPLET_CONFIG__ = { id: '527db40a-d387-4de4-bbb4-cb014ccf543e', name: 'KinTree - Interactive Family Tree' };
+      window.appletConfig = { id: '527db40a-d387-4de4-bbb4-cb014ccf543e', name: 'KinTree - Interactive Family Tree' };
+      window.config = { id: '527db40a-d387-4de4-bbb4-cb014ccf543e', name: 'KinTree - Interactive Family Tree' };
+
+      // Filter benign origin trial, unrecognized feature, config, and resize notices
+      (function() {
+        var isBenign = function(msg) {
+          if (!msg || typeof msg !== 'string') return false;
+          return (
+            msg.indexOf('Origin trial controlled feature not enabled') !== -1 ||
+            msg.indexOf('Unrecognized feature') !== -1 ||
+            msg.indexOf('No ID or name found in config') !== -1 ||
+            msg.indexOf('ResizeObserver loop') !== -1
+          );
+        };
+
+        var filterMethod = function(orig) {
+          return function() {
+            for (var i = 0; i < arguments.length; i++) {
+              if (isBenign(arguments[i])) return;
+            }
+            if (orig) orig.apply(console, arguments);
+          };
+        };
+
+        if (window.console) {
+          console.warn = filterMethod(console.warn);
+          console.error = filterMethod(console.error);
         }
-      }, true);
+
+        window.addEventListener('error', function (e) {
+          if (e && isBenign(e.message)) {
+            e.stopImmediatePropagation();
+            e.stopPropagation();
+            e.preventDefault();
+            return true;
+          }
+        }, true);
+      })();
+    </script>
+    <script id="__CONFIG__" type="application/json">
+      {"id": "527db40a-d387-4de4-bbb4-cb014ccf543e", "name": "KinTree - Interactive Family Tree"}
     </script>
   </head>
   <body class="bg-neutral-50 text-neutral-900 antialiased overflow-hidden select-none font-['Plus_Jakarta_Sans',sans-serif]">
