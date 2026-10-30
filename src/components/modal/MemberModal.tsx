@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FamilyMember, Gender } from '../../types/family';
-import { X, Upload, Trash2, Camera } from 'lucide-react';
+import { X, Upload, Trash2, Camera, Crop } from 'lucide-react';
+import { ImageCropperModal } from './ImageCropperModal';
 
 interface MemberModalProps {
   isOpen: boolean;
@@ -34,6 +35,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const [notes, setNotes] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [imageError, setImageError] = useState<string | null>(null);
+  const [tempImageToCrop, setTempImageToCrop] = useState<string | null>(null);
+  const [isCropperOpen, setIsCropperOpen] = useState<boolean>(false);
 
   // Selected relationships when editing
   const [selectedSpouseIds, setSelectedSpouseIds] = useState<string[]>([]);
@@ -75,21 +78,29 @@ export const MemberModal: React.FC<MemberModalProps> = ({
         const target = relationContext.targetMember;
         if (relationContext.type === 'spouse') {
           setGender(target.gender === 'male' ? 'female' : 'male');
-          setRelationRole(target.gender === 'male' ? 'Istri' : 'Suami');
+          setRelationRole('');
           setSelectedSpouseIds([target.id]);
         } else if (relationContext.type === 'child') {
           setGender('male');
-          setRelationRole('Anak');
+          setRelationRole('');
           // Add target parent and any spouse of target as parents
           const parents = [target.id, ...target.spouseIds];
           setSelectedParentIds(parents);
         } else if (relationContext.type === 'parent') {
-          setGender('male');
-          setRelationRole('Ayah');
+          const existingParentIds = target.parentIds || [];
+          if (existingParentIds.length > 0) {
+            const firstParent = allMembers.find((m) => m.id === existingParentIds[0]);
+            setGender(firstParent && firstParent.gender === 'male' ? 'female' : 'male');
+            setSelectedSpouseIds([existingParentIds[0]]);
+          } else {
+            setGender('male');
+            setSelectedSpouseIds([]);
+          }
+          setRelationRole('');
           setSelectedChildrenIds([target.id]);
         } else if (relationContext.type === 'sibling') {
           setGender(target.gender === 'male' ? 'female' : 'male');
-          setRelationRole('Saudara Kandung');
+          setRelationRole('');
           setSelectedParentIds(target.parentIds || []);
         }
       } else {
@@ -105,18 +116,26 @@ export const MemberModal: React.FC<MemberModalProps> = ({
     setImageError(null);
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setImageError('Ukuran foto terlalu besar. Maksimal 2MB.');
+      if (file.size > 8 * 1024 * 1024) {
+        setImageError('Ukuran foto terlalu besar. Maksimal 8MB.');
         return;
       }
       const reader = new FileReader();
       reader.onload = (uploadEvent) => {
         if (uploadEvent.target?.result) {
-          setPhotoUrl(uploadEvent.target.result as string);
+          setTempImageToCrop(uploadEvent.target.result as string);
+          setIsCropperOpen(true);
         }
       };
       reader.readAsDataURL(file);
+      e.target.value = '';
     }
+  };
+
+  const handleConfirmCrop = (croppedUrl: string) => {
+    setPhotoUrl(croppedUrl);
+    setIsCropperOpen(false);
+    setTempImageToCrop(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -196,14 +215,27 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setPhotoUrl('')}
-                    className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Hapus foto"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="absolute inset-0 bg-black/55 text-white flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempImageToCrop(photoUrl);
+                        setIsCropperOpen(true);
+                      }}
+                      className="p-1 hover:text-amber-300 transition-colors"
+                      title="Sesuaikan / Crop Foto"
+                    >
+                      <Crop className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoUrl('')}
+                      className="p-1 hover:text-red-400 transition-colors"
+                      title="Hapus foto"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <label className="w-16 h-16 rounded-full border-2 border-dashed border-neutral-300 hover:border-neutral-500 flex flex-col items-center justify-center cursor-pointer text-neutral-400 hover:text-neutral-600 bg-neutral-50 transition-colors">
@@ -220,9 +252,26 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             </div>
 
             <div className="flex-1 space-y-1">
-              <label className="text-xs font-medium text-neutral-700">
-                Nama Lengkap <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-neutral-700">
+                  Nama Lengkap <span className="text-red-500">*</span>
+                </label>
+                {photoUrl && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempImageToCrop(photoUrl);
+                        setIsCropperOpen(true);
+                      }}
+                      className="text-[11px] font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1 hover:underline"
+                    >
+                      <Crop className="w-3 h-3 text-neutral-500" />
+                      <span>Sesuaikan Foto</span>
+                    </button>
+                  </div>
+                )}
+              </div>
               <input
                 type="text"
                 required
@@ -307,7 +356,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                 disabled={!isDeceased}
                 value={isDeceased ? deathYear : ''}
                 onChange={(e) => setDeathYear(e.target.value)}
-                placeholder={isDeceased ? 'Contoh: 2021' : 'Masih hidup'}
+                placeholder={isDeceased ? 'Contoh: 2021' : '-'}
                 className="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all disabled:bg-neutral-100 disabled:text-neutral-400"
               />
             </div>
@@ -359,6 +408,17 @@ export const MemberModal: React.FC<MemberModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Confirmation Crop / Adjust Image Modal */}
+      <ImageCropperModal
+        isOpen={isCropperOpen}
+        imageSrc={tempImageToCrop || ''}
+        onClose={() => {
+          setIsCropperOpen(false);
+          setTempImageToCrop(null);
+        }}
+        onConfirm={handleConfirmCrop}
+      />
     </div>
   );
 };

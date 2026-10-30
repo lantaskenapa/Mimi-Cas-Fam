@@ -102,6 +102,35 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
   const memberMap = new Map<string, FamilyMember>();
   members.forEach((m) => memberMap.set(m.id, { ...m }));
 
+  // Ensure co-parents of any child are mutually linked as spouses,
+  // and single parents with spouses share the child
+  members.forEach((child) => {
+    if (child.parentIds && child.parentIds.length >= 2) {
+      for (let i = 0; i < child.parentIds.length; i++) {
+        for (let j = i + 1; j < child.parentIds.length; j++) {
+          const p1 = memberMap.get(child.parentIds[i]);
+          const p2 = memberMap.get(child.parentIds[j]);
+          if (p1 && p2) {
+            if (!p1.spouseIds.includes(p2.id)) p1.spouseIds.push(p2.id);
+            if (!p2.spouseIds.includes(p1.id)) p2.spouseIds.push(p1.id);
+            if (!p1.childrenIds.includes(child.id)) p1.childrenIds.push(child.id);
+            if (!p2.childrenIds.includes(child.id)) p2.childrenIds.push(child.id);
+          }
+        }
+      }
+    } else if (child.parentIds && child.parentIds.length === 1) {
+      const p1 = memberMap.get(child.parentIds[0]);
+      if (p1 && p1.spouseIds && p1.spouseIds.length > 0) {
+        const p2 = memberMap.get(p1.spouseIds[0]);
+        if (p2) {
+          if (!p1.childrenIds.includes(child.id)) p1.childrenIds.push(child.id);
+          if (!p2.childrenIds.includes(child.id)) p2.childrenIds.push(child.id);
+          if (!child.parentIds.includes(p2.id)) child.parentIds.push(p2.id);
+        }
+      }
+    }
+  });
+
   // Group members into generations
   const genGroups = new Map<number, string[]>();
   generations.forEach((gen, id) => {
@@ -396,9 +425,17 @@ export function computeLineageHighlight(
       const parentIds = current.parentIds || [];
       if (parentIds.length === 0) continue;
 
-      const validParents = parentIds
+      let validParents = parentIds
         .map((pId) => memberMap.get(pId))
         .filter((p): p is FamilyMember => Boolean(p));
+
+      // If single parent has spouse, associate with the couple union
+      if (validParents.length === 1 && validParents[0].spouseIds && validParents[0].spouseIds.length > 0) {
+        const spouse = memberMap.get(validParents[0].spouseIds[0]);
+        if (spouse) {
+          validParents = [validParents[0], spouse];
+        }
+      }
 
       let unionKey = '';
       if (validParents.length >= 2) {
@@ -452,9 +489,16 @@ export function computeLineageHighlight(
 
         highlightedMemberIds.add(child.id);
 
-        const validParents = (child.parentIds || [])
+        let validParents = (child.parentIds || [])
           .map((pId) => memberMap.get(pId))
           .filter((p): p is FamilyMember => Boolean(p));
+
+        if (validParents.length === 1 && validParents[0].spouseIds && validParents[0].spouseIds.length > 0) {
+          const spouse = memberMap.get(validParents[0].spouseIds[0]);
+          if (spouse) {
+            validParents = [validParents[0], spouse];
+          }
+        }
 
         let unionKey = '';
         if (validParents.length >= 2) {
@@ -464,9 +508,9 @@ export function computeLineageHighlight(
 
           // Highlight co-parent and spouse connection if married
           const otherParent = validParents.find((p) => p.id !== current.id);
-          if (otherParent && current.spouseIds?.includes(otherParent.id)) {
+          if (otherParent) {
             highlightedMemberIds.add(otherParent.id);
-            const pairKey = [current.id, otherParent.id].sort().join('--');
+            const pairKey = [p1.id, p2.id].sort().join('--');
             highlightedEdgeIds.add(`spouse-${pairKey}`);
           }
         } else if (validParents.length === 1) {
@@ -591,23 +635,63 @@ export function buildFlowElements(
   members.forEach((child) => {
     if (!child.parentIds || child.parentIds.length === 0) return;
 
-    const validParents = child.parentIds
+    let validParents = child.parentIds
       .map((pId) => memberMap.get(pId))
       .filter((p): p is FamilyMember => Boolean(p));
 
     if (validParents.length === 0) return;
 
+    // If child is linked to only 1 parent, but that parent has a spouse,
+    // associate the child with that married couple union so the branch line begins at the LOVE icon in the center!
+    if (validParents.length === 1 && validParents[0].spouseIds && validParents[0].spouseIds.length > 0) {
+      const spouse = memberMap.get(validParents[0].spouseIds[0]);
+      if (spouse) {
+        validParents = [validParents[0], spouse];
+      }
+    }
+
     if (validParents.length >= 2) {
       // Married couple: determine unique pair key
       const p1 = validParents[0];
       const p2 = validParents[1];
-      const unionKey = [p1.id, p2.id].sort().join('--');
+      const pairKey = [p1.id, p2.id].sort().join('--');
+
+      // Guarantee spouse edge (with love icon) exists between the parents
+      if (!processedSpousePairs.has(pairKey)) {
+        processedSpousePairs.add(pairKey);
+        const edgeId = `spouse-${pairKey}`;
+        const isHighlighted = highlightedEdgeIds.has(edgeId);
+        const isDimmed = hasActiveSelection && !isHighlighted;
+        const isSourceLeft = p1.position.x <= p2.position.x;
+        edges.push({
+          id: edgeId,
+          source: isSourceLeft ? p1.id : p2.id,
+          target: isSourceLeft ? p2.id : p1.id,
+          sourceHandle: 'right',
+          targetHandle: 'left',
+          type: 'spouseEdge',
+          animated: false,
+          zIndex: isHighlighted ? 100 : 1,
+          data: {
+            isDragging,
+            isHighlighted,
+            isDimmed,
+          },
+          style: {
+            stroke: isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#a3a3a3',
+            strokeWidth: isHighlighted ? 2.5 : isDimmed ? 1.2 : 1.25,
+            opacity: isDimmed ? 0.22 : 1,
+          },
+        });
+      }
+
+      const unionKey = pairKey;
       if (!unionChildrenMap.has(unionKey)) {
         unionChildrenMap.set(unionKey, { parent1: p1, parent2: p2, children: [] });
       }
       unionChildrenMap.get(unionKey)!.children.push(child);
     } else {
-      // Single parent
+      // Single parent without spouse
       const p1 = validParents[0];
       const unionKey = `single--${p1.id}`;
       if (!unionChildrenMap.has(unionKey)) {

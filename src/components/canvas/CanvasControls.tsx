@@ -3,7 +3,6 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Map,
   Sparkles,
   ArrowUp,
   ArrowDown,
@@ -14,8 +13,6 @@ interface CanvasControlsProps {
   onZoomOut: () => void;
   onFitView: () => void;
   onResetZoom: () => void;
-  isMinimapVisible: boolean;
-  onToggleMinimap: () => void;
   zoomLevel?: number;
   isHighlightEnabled: boolean;
   onToggleHighlight: () => void;
@@ -29,8 +26,6 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
   onZoomOut,
   onFitView,
   onResetZoom,
-  isMinimapVisible,
-  onToggleMinimap,
   zoomLevel = 1,
   isHighlightEnabled,
   onToggleHighlight,
@@ -153,19 +148,6 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
           className="p-2 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
         >
           <Maximize2 className="w-4 h-4" />
-        </button>
-
-        {/* Toggle Minimap */}
-        <button
-          onClick={onToggleMinimap}
-          title={isMinimapVisible ? 'Sembunyikan Peta Mini' : 'Tampilkan Peta Mini'}
-          className={`p-2 rounded-lg transition-colors ${
-            isMinimapVisible
-              ? 'bg-neutral-100 text-neutral-900'
-              : 'hover:text-neutral-900 hover:bg-neutral-100'
-          }`}
-        >
-          <Map className="w-4 h-4" />
         </button>
       </div>
     </div>

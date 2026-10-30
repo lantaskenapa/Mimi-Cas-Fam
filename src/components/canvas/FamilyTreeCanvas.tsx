@@ -2,7 +2,6 @@ import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react'
 import {
   ReactFlow,
   Background,
-  MiniMap,
   BackgroundVariant,
   NodeChange,
   applyNodeChanges,
@@ -35,8 +34,6 @@ interface FamilyTreeCanvasProps {
   onDelete: (member: FamilyMember) => void;
   onAddMemberDirect: () => void;
   treeTitle: string;
-  isMinimapVisible: boolean;
-  onToggleMinimap: () => void;
   exportTrigger: number;
   onExportComplete: () => void;
   onToast?: (msg: string) => void;
@@ -65,8 +62,6 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
   onDelete,
   onAddMemberDirect,
   treeTitle,
-  isMinimapVisible,
-  onToggleMinimap,
   exportTrigger,
   onExportComplete,
   onToast,
@@ -304,16 +299,6 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
           color="rgba(0, 0, 0, 0.035)"
         />
 
-        {/* Minimap toggle */}
-        {isMinimapVisible && (
-          <MiniMap
-            zoomable
-            pannable
-            nodeColor="#d4d4d4"
-            maskColor="rgba(245, 245, 245, 0.7)"
-            className="!bottom-20 !right-6 !bg-white !border !border-neutral-200 !rounded-xl !shadow-md overflow-hidden"
-          />
-        )}
       </ReactFlow>
 
       {/* Floating Canvas Controls with Highlight Toggle above Zoom */}
@@ -322,8 +307,6 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         onZoomOut={handleZoomOut}
         onFitView={handleFitView}
         onResetZoom={handleResetZoom}
-        isMinimapVisible={isMinimapVisible}
-        onToggleMinimap={onToggleMinimap}
         zoomLevel={zoomLevel}
         isHighlightEnabled={isHighlightEnabled}
         onToggleHighlight={() => setIsHighlightEnabled((prev) => !prev)}

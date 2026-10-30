@@ -147,12 +147,6 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
             {member.fullName}
           </h3>
 
-          {member.relationRole && (
-            <p className="text-xs text-neutral-500 font-medium mt-0.5">
-              {member.relationRole}
-            </p>
-          )}
-
           {getLifeSpan() && (
             <p className="text-xs font-mono text-neutral-400 mt-1 tabular-nums">
               {getLifeSpan()}
@@ -176,14 +170,12 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
             </div>
           )}
 
-          <div className="flex items-center gap-2.5 text-neutral-600">
-            <Calendar className="w-4 h-4 text-neutral-400 shrink-0" />
-            <span>
-              {member.isDeceased
-                ? `Wafat (${member.deathYear || 'Tahun tidak dicatat'})`
-                : 'Masih Hidup'}
-            </span>
-          </div>
+          {member.isDeceased && (
+            <div className="flex items-center gap-2.5 text-neutral-600">
+              <Calendar className="w-4 h-4 text-neutral-400 shrink-0" />
+              <span>Wafat ({member.deathYear || 'Tahun tidak dicatat'})</span>
+            </div>
+          )}
 
           {member.notes && (
             <div className="pt-2 text-neutral-600 leading-relaxed bg-neutral-50 p-3 rounded-lg border border-neutral-100">

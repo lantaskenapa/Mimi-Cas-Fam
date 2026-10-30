@@ -24,6 +24,10 @@ export function loadSavedTreeData(): FamilyTreeDataset {
       if (parsed.meta?.title === 'Pohon Keluarga Besar Hadiningrat') {
         parsed.meta.title = '';
       }
+      parsed.members = parsed.members.map((m: FamilyMember) => ({
+        ...m,
+        relationRole: '',
+      }));
       return parsed;
     }
     return DEFAULT_DATASET;

@@ -39,8 +39,7 @@ export default function App() {
     targetMember: FamilyMember;
   } | null>(null);
 
-  // Mini-map and export states
-  const [isMinimapVisible, setIsMinimapVisible] = useState(false);
+  // Export states
   const [exportTrigger, setExportTrigger] = useState(0);
   const [isExportingImage, setIsExportingImage] = useState(false);
 
@@ -243,26 +242,71 @@ export default function App() {
           const targetId = relationContext.targetMember.id;
 
           if (relationContext.type === 'spouse') {
-            updatedMembers = updatedMembers.map((m) =>
-              m.id === targetId
-                ? { ...m, spouseIds: Array.from(new Set([...m.spouseIds, newId])) }
-                : m
-            );
+            const targetChildren = relationContext.targetMember.childrenIds || [];
+            updatedMembers = updatedMembers.map((m) => {
+              if (m.id === targetId) {
+                return { ...m, spouseIds: Array.from(new Set([...m.spouseIds, newId])) };
+              }
+              if (targetChildren.includes(m.id)) {
+                return { ...m, parentIds: Array.from(new Set([...m.parentIds, newId])) };
+              }
+              return m;
+            });
+            const newMemIdx = updatedMembers.findIndex((m) => m.id === newId);
+            if (newMemIdx !== -1) {
+              updatedMembers[newMemIdx] = {
+                ...updatedMembers[newMemIdx],
+                spouseIds: Array.from(new Set([...updatedMembers[newMemIdx].spouseIds, targetId])),
+                childrenIds: Array.from(new Set([...updatedMembers[newMemIdx].childrenIds, ...targetChildren])),
+              };
+            }
           } else if (relationContext.type === 'child') {
-            const parentIdsToLink = newMember.parentIds;
+            const parentIdsToLink = Array.from(
+              new Set([
+                targetId,
+                ...(relationContext.targetMember.spouseIds || []),
+                ...newMember.parentIds,
+              ])
+            );
             updatedMembers = updatedMembers.map((m) =>
               parentIdsToLink.includes(m.id)
                 ? { ...m, childrenIds: Array.from(new Set([...m.childrenIds, newId])) }
                 : m
             );
+            const newMemIdx = updatedMembers.findIndex((m) => m.id === newId);
+            if (newMemIdx !== -1) {
+              updatedMembers[newMemIdx] = {
+                ...updatedMembers[newMemIdx],
+                parentIds: parentIdsToLink,
+              };
+            }
           } else if (relationContext.type === 'parent') {
-            updatedMembers = updatedMembers.map((m) =>
-              m.id === targetId
-                ? { ...m, parentIds: Array.from(new Set([...m.parentIds, newId])) }
-                : m
-            );
+            const existingParentIds = relationContext.targetMember.parentIds || [];
+            updatedMembers = updatedMembers.map((m) => {
+              if (m.id === targetId) {
+                return { ...m, parentIds: Array.from(new Set([...m.parentIds, newId])) };
+              }
+              // If target already has an existing parent, link existing parent & new parent as spouses!
+              if (existingParentIds.includes(m.id)) {
+                return {
+                  ...m,
+                  spouseIds: Array.from(new Set([...m.spouseIds, newId])),
+                  childrenIds: Array.from(new Set([...m.childrenIds, targetId])),
+                };
+              }
+              return m;
+            });
+
+            // Ensure new parent has target in childrenIds and existing parents in spouseIds
+            const newMemIdx = updatedMembers.findIndex((m) => m.id === newId);
+            if (newMemIdx !== -1) {
+              updatedMembers[newMemIdx] = {
+                ...updatedMembers[newMemIdx],
+                childrenIds: Array.from(new Set([...updatedMembers[newMemIdx].childrenIds, targetId])),
+                spouseIds: Array.from(new Set([...updatedMembers[newMemIdx].spouseIds, ...existingParentIds])),
+              };
+            }
           } else if (relationContext.type === 'sibling') {
-            // Also link to parents of the sibling
             const sharedParents = newMember.parentIds;
             updatedMembers = updatedMembers.map((m) =>
               sharedParents.includes(m.id)
@@ -374,8 +418,6 @@ export default function App() {
           onDelete={handleDeleteMember}
           onAddMemberDirect={handleAddNewMember}
           treeTitle={dataset.meta.title}
-          isMinimapVisible={isMinimapVisible}
-          onToggleMinimap={() => setIsMinimapVisible((v) => !v)}
           exportTrigger={exportTrigger}
           onExportComplete={() => setIsExportingImage(false)}
           onToast={showToast}
@@ -433,7 +475,7 @@ export default function App() {
 
       {/* Notification Toast */}
       {toastMessage && (
-        <div className="fixed bottom-6 left-6 z-50 px-4 py-2 bg-neutral-900 text-white text-xs font-medium rounded-xl shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-neutral-900 text-white text-xs font-medium rounded-xl shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200 pointer-events-none">
           <Check className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
