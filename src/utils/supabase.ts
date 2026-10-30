@@ -11,9 +11,13 @@ export interface SupabaseConfig {
 const SUPABASE_CONFIG_KEY = 'kintree_supabase_config_v1';
 
 export const DEFAULT_SUPABASE_CONFIG: SupabaseConfig = {
-  url: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || '',
-  anonKey: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || '',
-  autoSync: false,
+  url:
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ||
+    'https://ewxdnroywzaxoxqbinbn.supabase.co',
+  anonKey:
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3eGRucm95d3pheG94cWJpbmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMjc4ODAsImV4cCI6MjEwODkwMzg4MH0.xLa5hT0G2ZNf97sKnbsMkBUlwi5V7Xg1V8UWDPJDsdg',
+  autoSync: true,
   table: 'family_trees',
 };
 
@@ -22,14 +26,12 @@ export function loadSupabaseConfig(): SupabaseConfig {
     const raw = localStorage.getItem(SUPABASE_CONFIG_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.url === 'https://ewxdnroywzaxoxqbinbn.supabase.co') {
-        parsed.url = '';
-        parsed.anonKey = '';
-      }
       return {
         ...DEFAULT_SUPABASE_CONFIG,
         ...parsed,
-        autoSync: parsed.autoSync !== undefined ? parsed.autoSync : false,
+        url: parsed.url || DEFAULT_SUPABASE_CONFIG.url,
+        anonKey: parsed.anonKey || DEFAULT_SUPABASE_CONFIG.anonKey,
+        autoSync: parsed.autoSync !== undefined ? parsed.autoSync : true,
       };
     }
   } catch (e) {
