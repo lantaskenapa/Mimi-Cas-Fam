@@ -322,43 +322,53 @@ export const MemberModal: React.FC<MemberModalProps> = ({
           </div>
 
           {/* Birth & Death Years */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-neutral-700 block mb-1.5">
-                Tahun Lahir
-              </label>
-              <input
-                type="text"
-                value={birthYear}
-                onChange={(e) => setBirthYear(e.target.value)}
-                placeholder="Contoh: 1975"
-                className="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
-              />
+          <div className="space-y-3">
+            <div className={`grid gap-3 ${isDeceased ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div>
+                <label className="text-xs font-medium text-neutral-700 block mb-1.5">
+                  Tahun Lahir
+                </label>
+                <input
+                  type="text"
+                  value={birthYear}
+                  onChange={(e) => setBirthYear(e.target.value)}
+                  placeholder="Contoh: 1975"
+                  className="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+                />
+              </div>
+
+              {isDeceased && (
+                <div className="animate-in fade-in duration-150">
+                  <label className="text-xs font-medium text-neutral-700 block mb-1.5">
+                    Tahun Wafat
+                  </label>
+                  <input
+                    type="text"
+                    value={deathYear}
+                    onChange={(e) => setDeathYear(e.target.value)}
+                    placeholder="Contoh: 2021"
+                    className="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+                    autoFocus
+                  />
+                </div>
+              )}
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-medium text-neutral-700">
-                  Tahun Wafat
-                </label>
-                <label className="flex items-center gap-1.5 text-xs text-neutral-500 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isDeceased}
-                    onChange={(e) => setIsDeceased(e.target.checked)}
-                    className="rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900 w-3.5 h-3.5"
-                  />
-                  <span>Almarhum</span>
-                </label>
-              </div>
-              <input
-                type="text"
-                disabled={!isDeceased}
-                value={isDeceased ? deathYear : ''}
-                onChange={(e) => setDeathYear(e.target.value)}
-                placeholder={isDeceased ? 'Contoh: 2021' : '-'}
-                className="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all disabled:bg-neutral-100 disabled:text-neutral-400"
-              />
+            {/* Checkbox Status Almarhum */}
+            <div className="flex items-center">
+              <label className="inline-flex items-center gap-2 text-xs font-medium text-neutral-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isDeceased}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIsDeceased(checked);
+                    if (!checked) setDeathYear('');
+                  }}
+                  className="rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900 w-4 h-4 cursor-pointer"
+                />
+                <span>Status Almarhum / Almarhumah</span>
+              </label>
             </div>
           </div>
 

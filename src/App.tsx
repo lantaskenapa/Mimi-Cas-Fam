@@ -19,7 +19,7 @@ import { SideDetailPanel } from './components/panel/SideDetailPanel';
 import { MemberModal } from './components/modal/MemberModal';
 import { DeleteConfirmModal } from './components/modal/DeleteConfirmModal';
 import { SupabaseModal } from './components/modal/SupabaseModal';
-import { loadSupabaseConfig, saveTreeToCloud } from './utils/supabase';
+import { loadSupabaseConfig, saveTreeToCloud, loadTreeFromCloud } from './utils/supabase';
 import { Check, AlertCircle } from 'lucide-react';
 
 export default function App() {
@@ -43,8 +43,9 @@ export default function App() {
   const [exportTrigger, setExportTrigger] = useState(0);
   const [isExportingImage, setIsExportingImage] = useState(false);
 
-  // Toast notification
+  // Toast notification & cloud sync status
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -53,12 +54,43 @@ export default function App() {
     }, 2800);
   }, []);
 
-  // Persist to localStorage whenever dataset changes, and auto-sync to Supabase if enabled
+  // Auto-connect and sync from Supabase Cloud on initial startup
+  useEffect(() => {
+    const config = loadSupabaseConfig();
+    if (config.url && config.anonKey) {
+      setCloudSyncStatus('syncing');
+      loadTreeFromCloud('default-family-tree', config)
+        .then((res) => {
+          if (res.success && res.dataset && Array.isArray(res.dataset.members) && res.dataset.members.length > 0) {
+            setDataset(res.dataset);
+            saveTreeData(res.dataset);
+            setCloudSyncStatus('synced');
+          } else {
+            // First time sync to cloud
+            saveTreeToCloud('default-family-tree', dataset, config)
+              .then(() => setCloudSyncStatus('synced'))
+              .catch(() => setCloudSyncStatus('error'));
+          }
+        })
+        .catch(() => setCloudSyncStatus('error'));
+    }
+  }, []);
+
+  // Persist to localStorage whenever dataset changes, and auto-sync to Supabase
   useEffect(() => {
     saveTreeData(dataset);
     const config = loadSupabaseConfig();
     if (config.autoSync && config.url && config.anonKey) {
-      saveTreeToCloud('default-family-tree', dataset, config).catch(() => {});
+      setCloudSyncStatus('syncing');
+      saveTreeToCloud('default-family-tree', dataset, config)
+        .then((res) => {
+          if (res.success) {
+            setCloudSyncStatus('synced');
+          } else {
+            setCloudSyncStatus('error');
+          }
+        })
+        .catch(() => setCloudSyncStatus('error'));
     }
   }, [dataset]);
 
@@ -386,14 +418,12 @@ export default function App() {
         members={dataset.members}
         onSelectMember={(m) => setSelectedMemberId(m.id)}
         onAddNewMember={handleAddNewMember}
-        onAutoArrange={handleAutoArrange}
         onExportPNG={handleExportPNG}
         onExportJSON={handleExportJSON}
         onImportJSON={handleImportJSON}
-        onResetSample={handleResetSample}
-        onClearTree={handleClearTree}
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         isExportingImage={isExportingImage}
+        cloudSyncStatus={cloudSyncStatus}
       />
 
       {/* Main Canvas Area */}

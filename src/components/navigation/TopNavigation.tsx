@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { FamilyMember } from '../../types/family';
 import {
   Plus,
-  LayoutGrid,
   Download,
   Upload,
   Settings,
@@ -11,10 +10,11 @@ import {
   X,
   Image as ImageIcon,
   FileCode,
-  RotateCcw,
-  Trash,
   HelpCircle,
   Database,
+  Cloud,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
 
 interface TopNavigationProps {
@@ -23,14 +23,12 @@ interface TopNavigationProps {
   members: FamilyMember[];
   onSelectMember: (member: FamilyMember) => void;
   onAddNewMember: () => void;
-  onAutoArrange: () => void;
   onExportPNG: () => void;
   onExportJSON: () => void;
   onImportJSON: (file: File) => void;
-  onResetSample: () => void;
-  onClearTree: () => void;
   onOpenSupabaseModal: () => void;
   isExportingImage?: boolean;
+  cloudSyncStatus?: 'synced' | 'syncing' | 'error';
 }
 
 export const TopNavigation: React.FC<TopNavigationProps> = ({
@@ -39,14 +37,12 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
   members,
   onSelectMember,
   onAddNewMember,
-  onAutoArrange,
   onExportPNG,
   onExportJSON,
   onImportJSON,
-  onResetSample,
-  onClearTree,
   onOpenSupabaseModal,
   isExportingImage = false,
+  cloudSyncStatus = 'synced',
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(treeTitle);
@@ -195,16 +191,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
       {/* Zone 3: Actions & 3-Dots Menu */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-        {/* Desktop: Auto Arrange Layout */}
-        <button
-          onClick={onAutoArrange}
-          title="Tata pohon keluarga secara otomatis rapi berdasarkan generasi"
-          className="hidden md:flex px-2.5 py-1.5 text-xs font-medium text-neutral-700 bg-white hover:bg-neutral-100 border border-neutral-200 rounded-lg shadow-2xs transition-colors items-center gap-1.5 whitespace-nowrap"
-        >
-          <LayoutGrid className="w-3.5 h-3.5 text-neutral-500" />
-          <span>Susun Otomatis</span>
-        </button>
-
         {/* Desktop: Add Member Primary Button */}
         <button
           onClick={onAddNewMember}
@@ -222,15 +208,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
         >
           <Plus className="w-4 h-4" />
         </button>
-
-        {/* Hidden File Input for JSON import */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          onChange={handleFileChange}
-          className="hidden"
-        />
 
         {/* 3-Dots Menu (MoreVertical) */}
         <div className="relative">
@@ -270,17 +247,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
                     <Plus className="w-4 h-4 text-neutral-900" />
                     <span>Tambah Anggota Baru</span>
                   </button>
-
-                  <button
-                    onClick={() => {
-                      setIsSettingsMenuOpen(false);
-                      onAutoArrange();
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs text-neutral-800 hover:bg-neutral-50 flex items-center gap-2.5 transition-colors"
-                  >
-                    <LayoutGrid className="w-4 h-4 text-neutral-600" />
-                    <span>Susun Otomatis Rapi</span>
-                  </button>
                 </div>
 
                 <div className="px-3 py-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
@@ -297,8 +263,9 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
                   <Database className="w-4 h-4 text-emerald-600 shrink-0" />
                   <div className="flex-1 flex items-center justify-between">
                     <span className="font-medium text-neutral-900">Koneksi Supabase</span>
-                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-medium">
-                      Tersedia
+                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {cloudSyncStatus === 'syncing' ? 'Menyimpan...' : 'Tersambung'}
                     </span>
                   </div>
                 </button>
@@ -341,34 +308,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
                 >
                   <Upload className="w-4 h-4 text-neutral-500" />
                   <span>Impor Berkas (JSON)</span>
-                </button>
-
-                <div className="my-1.5 border-t border-neutral-100" />
-
-                <div className="px-3 py-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
-                  Kelola Pohon
-                </div>
-
-                <button
-                  onClick={() => {
-                    setIsSettingsMenuOpen(false);
-                    onResetSample();
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-neutral-700 hover:bg-neutral-50 flex items-center gap-2.5 transition-colors"
-                >
-                  <RotateCcw className="w-4 h-4 text-neutral-500" />
-                  <span>Muat Contoh Silsilah</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setIsSettingsMenuOpen(false);
-                    onClearTree();
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
-                >
-                  <Trash className="w-4 h-4 text-red-500" />
-                  <span>Kosongkan Pohon</span>
                 </button>
               </div>
             </>

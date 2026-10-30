@@ -573,6 +573,7 @@ export function buildFlowElements(
       id: member.id,
       type: 'familyNode',
       position: member.position,
+      draggable: false,
       zIndex: isSelected ? 1000 : isHighlighted ? 500 : 1,
       data: {
         member,
