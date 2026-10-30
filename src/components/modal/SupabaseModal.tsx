@@ -80,14 +80,10 @@ export const SupabaseModal: React.FC<SupabaseModalProps> = ({
     }
   };
 
-  const handleLoadFromCloud = async () => {
-    if (
-      !window.confirm(
-        'Ambil silsilah dari Supabase? Data pohon yang belum tersimpan lokal akan digantikan.'
-      )
-    ) {
-      return;
-    }
+  const [confirmPull, setConfirmPull] = useState(false);
+
+  const executeLoadFromCloud = async () => {
+    setConfirmPull(false);
     setIsLoadingCloud(true);
     const res = await loadTreeFromCloud('default-family-tree', config);
     setIsLoadingCloud(false);
@@ -98,6 +94,10 @@ export const SupabaseModal: React.FC<SupabaseModalProps> = ({
     } else {
       setTestResult({ success: false, message: res.error || 'Gagal memuat dari cloud.' });
     }
+  };
+
+  const handleLoadFromCloud = () => {
+    setConfirmPull(true);
   };
 
   const sqlSchema = `-- Jalankan perintah ini di Supabase SQL Editor jika tabel belum dibuat:
@@ -250,6 +250,31 @@ create policy "Public Access Policy" on family_trees
               <span>{isLoadingCloud ? 'Memuat...' : 'Tarik Cloud'}</span>
             </button>
           </div>
+
+          {/* Inline confirmation for Pull from Cloud */}
+          {confirmPull && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-2 animate-in fade-in duration-150">
+              <p className="font-medium">
+                Ambil data silsilah dari Supabase? Data pohon yang belum tersimpan secara lokal akan digantikan.
+              </p>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmPull(false)}
+                  className="px-2.5 py-1 text-xs font-medium bg-white border border-neutral-300 hover:bg-neutral-50 rounded-lg text-neutral-700 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={executeLoadFromCloud}
+                  className="px-2.5 py-1 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
+                >
+                  Ya, Ambil Silsilah
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* SQL Setup Helper Accordion */}
           <div className="border border-neutral-200 rounded-xl overflow-hidden bg-neutral-50/50">

@@ -96,6 +96,16 @@ export const FamilyNode = memo(({ data }: NodeProps<any>) => {
             <span>Tambah Anak</span>
           </button>
 
+          {/* Tambah Saudara Kandung */}
+          <button
+            onClick={() => data.onAddSibling(member)}
+            title="Tambah Saudara Kandung"
+            className="w-full px-2.5 py-1.5 text-left text-xs font-medium text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg flex items-center gap-2.5 transition-colors"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <span>Tambah Saudara</span>
+          </button>
+
           {/* Tambah Orang Tua */}
           <button
             onClick={() => data.onAddParent(member)}

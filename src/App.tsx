@@ -45,7 +45,10 @@ export default function App() {
 
   // Toast notification & cloud sync status
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'disconnected'>(() => {
+    const config = loadSupabaseConfig();
+    return config.url && config.anonKey ? 'synced' : 'disconnected';
+  });
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -73,6 +76,8 @@ export default function App() {
           }
         })
         .catch(() => setCloudSyncStatus('error'));
+    } else {
+      setCloudSyncStatus('disconnected');
     }
   }, []);
 
@@ -208,17 +213,31 @@ export default function App() {
   const handleSaveMember = (formData: Partial<FamilyMember>) => {
     if (modalMode === 'edit' && selectedMember) {
       // Update existing
-      setDataset((prev) => ({
-        ...prev,
-        members: prev.members.map((m) =>
-          m.id === selectedMember.id
-            ? ({
-                ...m,
-                ...formData,
-              } as FamilyMember)
-            : m
-        ),
-      }));
+      const updatedSpouseIds = formData.spouseIds || [];
+      const oldSpouseIds = selectedMember.spouseIds || [];
+
+      setDataset((prev) => {
+        const updated = prev.members.map((m) => {
+          if (m.id === selectedMember.id) {
+            return {
+              ...m,
+              ...formData,
+            } as FamilyMember;
+          }
+          if (updatedSpouseIds.includes(m.id) && !m.spouseIds.includes(selectedMember.id)) {
+            return { ...m, spouseIds: [...m.spouseIds, selectedMember.id] };
+          }
+          if (oldSpouseIds.includes(m.id) && !updatedSpouseIds.includes(m.id)) {
+            return { ...m, spouseIds: m.spouseIds.filter((id) => id !== selectedMember.id) };
+          }
+          return m;
+        });
+
+        return {
+          ...prev,
+          members: autoArrangeTree(updated),
+        };
+      });
       showToast('Profil berhasil diperbarui');
     } else {
       // Create new member
@@ -313,13 +332,15 @@ export default function App() {
               };
             }
           } else if (relationContext.type === 'parent') {
-            const existingParentIds = relationContext.targetMember.parentIds || [];
+            const userChosenSpouseIds = formData.spouseIds || [];
+
             updatedMembers = updatedMembers.map((m) => {
+              // Target child gets new parent in parentIds
               if (m.id === targetId) {
                 return { ...m, parentIds: Array.from(new Set([...m.parentIds, newId])) };
               }
-              // If target already has an existing parent, link existing parent & new parent as spouses!
-              if (existingParentIds.includes(m.id)) {
+              // Only if user explicitly checked an existing parent as spouse:
+              if (userChosenSpouseIds.includes(m.id)) {
                 return {
                   ...m,
                   spouseIds: Array.from(new Set([...m.spouseIds, newId])),
@@ -329,22 +350,56 @@ export default function App() {
               return m;
             });
 
-            // Ensure new parent has target in childrenIds and existing parents in spouseIds
+            // Ensure new parent has target in childrenIds and only user-chosen spouses
             const newMemIdx = updatedMembers.findIndex((m) => m.id === newId);
             if (newMemIdx !== -1) {
               updatedMembers[newMemIdx] = {
                 ...updatedMembers[newMemIdx],
                 childrenIds: Array.from(new Set([...updatedMembers[newMemIdx].childrenIds, targetId])),
-                spouseIds: Array.from(new Set([...updatedMembers[newMemIdx].spouseIds, ...existingParentIds])),
+                spouseIds: Array.from(new Set(userChosenSpouseIds)),
               };
             }
           } else if (relationContext.type === 'sibling') {
-            const sharedParents = newMember.parentIds;
-            updatedMembers = updatedMembers.map((m) =>
-              sharedParents.includes(m.id)
-                ? { ...m, childrenIds: Array.from(new Set([...m.childrenIds, newId])) }
-                : m
-            );
+            const target = relationContext.targetMember;
+            const sharedParents = target.parentIds && target.parentIds.length > 0
+              ? target.parentIds
+              : (newMember.parentIds || []);
+
+            const targetExistingSiblings = target.siblingIds || [];
+            const allSiblingGroup = Array.from(new Set([targetId, ...targetExistingSiblings, newId]));
+
+            updatedMembers = updatedMembers.map((m) => {
+              if (m.id === targetId) {
+                return {
+                  ...m,
+                  siblingIds: Array.from(new Set([...(m.siblingIds || []), newId])),
+                };
+              }
+              // Other existing siblings of target get new sibling added
+              if (targetExistingSiblings.includes(m.id)) {
+                return {
+                  ...m,
+                  siblingIds: Array.from(new Set([...(m.siblingIds || []), newId])),
+                };
+              }
+              // Parents get new member added to children
+              if (sharedParents.includes(m.id)) {
+                return {
+                  ...m,
+                  childrenIds: Array.from(new Set([...m.childrenIds, newId])),
+                };
+              }
+              return m;
+            });
+
+            const newMemIdx = updatedMembers.findIndex((m) => m.id === newId);
+            if (newMemIdx !== -1) {
+              updatedMembers[newMemIdx] = {
+                ...updatedMembers[newMemIdx],
+                parentIds: Array.from(new Set([...updatedMembers[newMemIdx].parentIds, ...sharedParents])),
+                siblingIds: allSiblingGroup.filter((id) => id !== newId),
+              };
+            }
           }
         }
 

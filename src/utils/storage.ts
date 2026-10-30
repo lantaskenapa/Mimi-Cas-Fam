@@ -90,6 +90,7 @@ export function parseImportedJSON(content: string): FamilyTreeDataset {
     spouseIds: Array.isArray(m.spouseIds) ? m.spouseIds : [],
     parentIds: Array.isArray(m.parentIds) ? m.parentIds : [],
     childrenIds: Array.isArray(m.childrenIds) ? m.childrenIds : [],
+    siblingIds: Array.isArray(m.siblingIds) ? m.siblingIds : [],
     position: m.position && typeof m.position.x === 'number' && typeof m.position.y === 'number'
       ? { x: m.position.x, y: m.position.y }
       : { x: 100 + (index % 4) * 260, y: 100 + Math.floor(index / 4) * 220 },

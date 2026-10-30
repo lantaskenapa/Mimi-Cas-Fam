@@ -102,32 +102,15 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
   const memberMap = new Map<string, FamilyMember>();
   members.forEach((m) => memberMap.set(m.id, { ...m }));
 
-  // Ensure co-parents of any child are mutually linked as spouses,
-  // and single parents with spouses share the child
+  // Ensure bidirectional consistency between parents and children without fabricating false marriages
   members.forEach((child) => {
-    if (child.parentIds && child.parentIds.length >= 2) {
-      for (let i = 0; i < child.parentIds.length; i++) {
-        for (let j = i + 1; j < child.parentIds.length; j++) {
-          const p1 = memberMap.get(child.parentIds[i]);
-          const p2 = memberMap.get(child.parentIds[j]);
-          if (p1 && p2) {
-            if (!p1.spouseIds.includes(p2.id)) p1.spouseIds.push(p2.id);
-            if (!p2.spouseIds.includes(p1.id)) p2.spouseIds.push(p1.id);
-            if (!p1.childrenIds.includes(child.id)) p1.childrenIds.push(child.id);
-            if (!p2.childrenIds.includes(child.id)) p2.childrenIds.push(child.id);
-          }
+    if (child.parentIds && child.parentIds.length > 0) {
+      child.parentIds.forEach((pId) => {
+        const p = memberMap.get(pId);
+        if (p && !p.childrenIds.includes(child.id)) {
+          p.childrenIds.push(child.id);
         }
-      }
-    } else if (child.parentIds && child.parentIds.length === 1) {
-      const p1 = memberMap.get(child.parentIds[0]);
-      if (p1 && p1.spouseIds && p1.spouseIds.length > 0) {
-        const p2 = memberMap.get(p1.spouseIds[0]);
-        if (p2) {
-          if (!p1.childrenIds.includes(child.id)) p1.childrenIds.push(child.id);
-          if (!p2.childrenIds.includes(child.id)) p2.childrenIds.push(child.id);
-          if (!child.parentIds.includes(p2.id)) child.parentIds.push(p2.id);
-        }
-      }
+      });
     }
   });
 
@@ -626,79 +609,75 @@ export function buildFlowElements(
     });
   });
 
-  // 2. Parent-to-Children Branch Edges Originating from Spouse Midpoint
+  // 2. Parent-to-Children Branch Edges
   // Group all children by their parent couple / single parent
-  const unionChildrenMap = new Map<
-    string,
-    { parent1: FamilyMember; parent2?: FamilyMember; children: FamilyMember[] }
-  >();
+  interface FamilyUnionItem {
+    unionKey: string;
+    parent1: FamilyMember;
+    parent2?: FamilyMember;
+    children: FamilyMember[];
+    isDifferentiated?: boolean;
+  }
+
+  const unionChildrenMap = new Map<string, FamilyUnionItem>();
 
   members.forEach((child) => {
     if (!child.parentIds || child.parentIds.length === 0) return;
 
-    let validParents = child.parentIds
+    const validParents = child.parentIds
       .map((pId) => memberMap.get(pId))
       .filter((p): p is FamilyMember => Boolean(p));
 
     if (validParents.length === 0) return;
 
-    // If child is linked to only 1 parent, but that parent has a spouse,
-    // associate the child with that married couple union so the branch line begins at the LOVE icon in the center!
-    if (validParents.length === 1 && validParents[0].spouseIds && validParents[0].spouseIds.length > 0) {
-      const spouse = memberMap.get(validParents[0].spouseIds[0]);
-      if (spouse) {
-        validParents = [validParents[0], spouse];
-      }
-    }
+    const handledParentIds = new Set<string>();
 
-    if (validParents.length >= 2) {
-      // Married couple: determine unique pair key
-      const p1 = validParents[0];
-      const p2 = validParents[1];
-      const pairKey = [p1.id, p2.id].sort().join('--');
+    for (let i = 0; i < validParents.length; i++) {
+      const p1 = validParents[i];
+      if (handledParentIds.has(p1.id)) continue;
 
-      // Guarantee spouse edge (with love icon) exists between the parents
-      if (!processedSpousePairs.has(pairKey)) {
-        processedSpousePairs.add(pairKey);
-        const edgeId = `spouse-${pairKey}`;
-        const isHighlighted = highlightedEdgeIds.has(edgeId);
-        const isDimmed = hasActiveSelection && !isHighlighted;
-        const isSourceLeft = p1.position.x <= p2.position.x;
-        edges.push({
-          id: edgeId,
-          source: isSourceLeft ? p1.id : p2.id,
-          target: isSourceLeft ? p2.id : p1.id,
-          sourceHandle: 'right',
-          targetHandle: 'left',
-          type: 'spouseEdge',
-          animated: false,
-          zIndex: isHighlighted ? 100 : 1,
-          data: {
-            isDragging,
-            isHighlighted,
-            isDimmed,
-          },
-          style: {
-            stroke: isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#a3a3a3',
-            strokeWidth: isHighlighted ? 2.5 : isDimmed ? 1.2 : 1.25,
-            opacity: isDimmed ? 0.22 : 1,
-          },
-        });
-      }
+      // Check if p1 has a mutual spouse among this child's parents
+      const spouseParent = validParents.find(
+        (p2) => p2.id !== p1.id && p1.spouseIds.includes(p2.id) && p2.spouseIds.includes(p1.id)
+      );
 
-      const unionKey = pairKey;
-      if (!unionChildrenMap.has(unionKey)) {
-        unionChildrenMap.set(unionKey, { parent1: p1, parent2: p2, children: [] });
+      if (spouseParent) {
+        // Married couple union (already has love connection)
+        handledParentIds.add(p1.id);
+        handledParentIds.add(spouseParent.id);
+
+        const pairKey = [p1.id, spouseParent.id].sort().join('--');
+        const unionKey = `couple--${pairKey}`;
+
+        if (!unionChildrenMap.has(unionKey)) {
+          unionChildrenMap.set(unionKey, {
+            unionKey,
+            parent1: p1,
+            parent2: spouseParent,
+            children: [],
+            isDifferentiated: false,
+          });
+        }
+        unionChildrenMap.get(unionKey)!.children.push(child);
+      } else {
+        // Independent / separate parent (not married to child's other parent)
+        handledParentIds.add(p1.id);
+
+        // "garis orang tua baru menuju anak dibedakan garisnya"
+        // If the child has multiple parents and this parent is not the first, or added separately:
+        const isDifferentiated = validParents.length > 1 && validParents.indexOf(p1) > 0;
+
+        const unionKey = `single--${p1.id}--diff-${isDifferentiated ? '1' : '0'}`;
+        if (!unionChildrenMap.has(unionKey)) {
+          unionChildrenMap.set(unionKey, {
+            unionKey,
+            parent1: p1,
+            children: [],
+            isDifferentiated,
+          });
+        }
+        unionChildrenMap.get(unionKey)!.children.push(child);
       }
-      unionChildrenMap.get(unionKey)!.children.push(child);
-    } else {
-      // Single parent without spouse
-      const p1 = validParents[0];
-      const unionKey = `single--${p1.id}`;
-      if (!unionChildrenMap.has(unionKey)) {
-        unionChildrenMap.set(unionKey, { parent1: p1, children: [] });
-      }
-      unionChildrenMap.get(unionKey)!.children.push(child);
     }
   });
 
@@ -715,11 +694,12 @@ export function buildFlowElements(
     minX: number;
     maxX: number;
     busY: number;
+    isDifferentiated?: boolean;
   }
 
   const unionList: FamilyUnion[] = [];
 
-  unionChildrenMap.forEach(({ parent1, parent2, children }, unionKey) => {
+  unionChildrenMap.forEach(({ parent1, parent2, children, isDifferentiated }, unionKey) => {
     let midX: number;
     let midY: number;
 
@@ -756,6 +736,7 @@ export function buildFlowElements(
       minX,
       maxX,
       busY: 0,
+      isDifferentiated,
     });
   });
 
@@ -794,15 +775,12 @@ export function buildFlowElements(
 
       // Check for collision with any other family's bus in this generation tier
       const hasCollision = allocatedBusBands.some((allocated) => {
-        // Are they in the same generation vertical tier?
         const sameTier = Math.abs(allocated.tierY - union.maxParentBottom) < 60;
         if (!sameTier) return false;
 
-        // Is the bus altitude too close (< 14px)?
         const altitudeTooClose = Math.abs(allocated.busY - candidateBusY) < 14;
         if (!altitudeTooClose) return false;
 
-        // Do their horizontal spans overlap or come within 32px of each other?
         const horizontalOverlap = !(
           union.maxX + 32 < allocated.minX || union.minX - 32 > allocated.maxX
         );
@@ -831,14 +809,29 @@ export function buildFlowElements(
     y: m.position.y,
   }));
 
-  // Create exactly ONE genealogical branching edge per child
+  // Create genealogical branching edge per child
   unionList.forEach((union) => {
-    const { parent1, parent2, children, unionKey, midX, midY, busY } = union;
+    const { parent1, parent2, children, unionKey, midX, midY, busY, isDifferentiated } = union;
 
     children.forEach((child, index) => {
       const edgeId = `branch-${unionKey}-child-${child.id}`;
-      const isHighlighted = highlightedEdgeIds.has(edgeId);
+      const isHighlighted =
+        highlightedEdgeIds.has(edgeId) ||
+        ((highlightedMemberIds.has(parent1.id) || (parent2 && highlightedMemberIds.has(parent2.id))) &&
+          highlightedMemberIds.has(child.id));
       const isDimmed = hasActiveSelection && !isHighlighted;
+
+      const strokeColor = isHighlighted
+        ? isDifferentiated
+          ? '#1d4ed8'
+          : '#0f172a'
+        : isDimmed
+        ? isDifferentiated
+          ? '#93c5fd'
+          : '#cbd5e1'
+        : isDifferentiated
+        ? '#2563eb'
+        : '#94a3b8';
 
       edges.push({
         id: edgeId,
@@ -847,7 +840,7 @@ export function buildFlowElements(
         sourceHandle: 'bottom',
         targetHandle: 'top',
         type: 'parentChildBranchEdge',
-        zIndex: isHighlighted ? 100 : 1,
+        zIndex: isHighlighted ? 100 : isDifferentiated ? 10 : 1,
         data: {
           parent1Id: parent1.id,
           parent2Id: parent2?.id,
@@ -862,17 +855,19 @@ export function buildFlowElements(
           isDragging,
           isHighlighted,
           isDimmed,
+          isDifferentiated,
         },
         style: {
-          stroke: isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#94a3b8',
-          strokeWidth: isHighlighted ? 2.75 : isDimmed ? 1.2 : 1.5,
+          stroke: strokeColor,
+          strokeWidth: isHighlighted ? 2.75 : isDifferentiated ? 2 : 1.5,
+          strokeDasharray: isDifferentiated ? '6, 4' : undefined,
           opacity: isDimmed ? 0.22 : 1,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: isHighlighted ? 8 : 7,
           height: isHighlighted ? 8 : 7,
-          color: isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#94a3b8',
+          color: strokeColor,
         },
       });
     });
@@ -913,8 +908,9 @@ export function getRelatedMembers(members: FamilyMember[], currentId: string) {
   const siblings = members.filter(
     (m) =>
       m.id !== current.id &&
-      m.parentIds.length > 0 &&
-      current.parentIds.some((pId) => m.parentIds.includes(pId))
+      ((m.parentIds.length > 0 && current.parentIds.some((pId) => m.parentIds.includes(pId))) ||
+        (current.siblingIds && current.siblingIds.includes(m.id)) ||
+        (m.siblingIds && m.siblingIds.includes(current.id)))
   );
 
   return {

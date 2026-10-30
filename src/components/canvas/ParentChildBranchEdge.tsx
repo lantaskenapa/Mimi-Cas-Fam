@@ -13,6 +13,7 @@ export interface ParentChildBranchData {
   siblingCount?: number;
   obstacles?: Array<{ id: string; x: number; y: number }>;
   isDragging?: boolean;
+  isDifferentiated?: boolean;
 }
 
 export const ParentChildBranchEdge: React.FC<EdgeProps> = ({

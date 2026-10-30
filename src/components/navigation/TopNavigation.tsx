@@ -28,7 +28,7 @@ interface TopNavigationProps {
   onImportJSON: (file: File) => void;
   onOpenSupabaseModal: () => void;
   isExportingImage?: boolean;
-  cloudSyncStatus?: 'synced' | 'syncing' | 'error';
+  cloudSyncStatus?: 'synced' | 'syncing' | 'error' | 'disconnected';
 }
 
 export const TopNavigation: React.FC<TopNavigationProps> = ({
@@ -223,13 +223,28 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
                   }}
                   className="w-full px-3 py-2 text-left text-xs text-neutral-800 hover:bg-neutral-50 flex items-center gap-2.5 transition-colors group"
                 >
-                  <Database className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <Database className={`w-4 h-4 shrink-0 ${cloudSyncStatus === 'synced' ? 'text-emerald-600' : 'text-neutral-500'}`} />
                   <div className="flex-1 flex items-center justify-between">
                     <span className="font-medium text-neutral-900">Koneksi Supabase</span>
-                    <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-medium flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      {cloudSyncStatus === 'syncing' ? 'Menyimpan...' : 'Tersambung'}
-                    </span>
+                    {cloudSyncStatus === 'disconnected' ? (
+                      <span className="text-[10px] text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200 font-medium">
+                        Lokal / Offline
+                      </span>
+                    ) : cloudSyncStatus === 'syncing' ? (
+                      <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-medium flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        Menyimpan...
+                      </span>
+                    ) : cloudSyncStatus === 'synced' ? (
+                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-medium flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Tersambung
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-red-700 bg-red-50 px-1.5 py-0.5 rounded border border-red-200 font-medium flex items-center gap-1">
+                        Gagal Sync
+                      </span>
+                    )}
                   </div>
                 </button>
 

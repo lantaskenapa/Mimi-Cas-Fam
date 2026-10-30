@@ -17,6 +17,7 @@ export interface FamilyMember {
   spouseIds: string[];
   parentIds: string[];
   childrenIds: string[];
+  siblingIds?: string[];
   
   // Canvas coordinate
   position: {

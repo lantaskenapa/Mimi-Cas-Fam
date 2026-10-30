@@ -322,6 +322,13 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
                 <Users className="w-3.5 h-3.5 text-neutral-400" />
                 Saudara Kandung ({siblings.length})
               </span>
+              <button
+                onClick={() => onAddSibling(member)}
+                className="text-[11px] text-neutral-600 hover:text-neutral-900 hover:underline flex items-center gap-1"
+                title="Tambah Saudara Kandung"
+              >
+                <UserPlus className="w-3 h-3" /> Tambah
+              </button>
             </div>
             {siblings.length > 0 ? (
               <div className="space-y-1.5">
@@ -344,11 +351,15 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
                 ))}
               </div>
             ) : (
-              <p className="text-[11px] text-neutral-400 italic">
-                {parents.length > 0
-                  ? 'Anak tunggal (belum ada saudara lain)'
-                  : 'Orang tua belum diisi untuk melihat saudara'}
-              </p>
+              <div className="text-[11px] text-neutral-400 py-1">
+                <p className="italic">Belum ada saudara kandung terdata</p>
+                <button
+                  onClick={() => onAddSibling(member)}
+                  className="mt-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium inline-flex items-center gap-1"
+                >
+                  <UserPlus className="w-3 h-3" /> Tambah Saudara Kandung
+                </button>
+              </div>
             )}
           </div>
         </div>
