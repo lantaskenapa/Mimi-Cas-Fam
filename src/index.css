@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: #fafafa;
+    color: #171717;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+/* Custom Minimalist Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+/* React Flow customizations for minimalist Figma/Notion vibe */
+.react-flow__pane {
+  cursor: grab;
+}
+
+.react-flow__pane:active {
+  cursor: grabbing;
+}
+
+.react-flow__node {
+  cursor: default;
+}
+
+.react-flow__handle {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.group:hover .react-flow__handle {
+  opacity: 1;
+}
+
+/* Clean edge styling */
+.react-flow__edge-path {
+  stroke-linecap: round;
+}

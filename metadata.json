@@ -1,0 +1,6 @@
+{
+  "name": "KinTree - Interactive Family Tree",
+  "description": "Pohon keluarga interaktif digital dengan desain minimalis modern, canvas drag and drop, relasi keluarga otomatis, dan ekspor pohon.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
