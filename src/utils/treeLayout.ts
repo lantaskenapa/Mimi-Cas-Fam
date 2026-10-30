@@ -1,12 +1,12 @@
 import { FamilyMember } from '../types/family';
 import { Node, Edge, MarkerType } from '@xyflow/react';
 
-export const CARD_WIDTH = 230;
-export const CARD_HEIGHT = 75;
-export const SPOUSE_GAP = 56;
-export const SIBLING_GAP = 40;
-export const FAMILY_GAP = 70;
-export const VERTICAL_GAP = 130;
+export const CARD_WIDTH = 150;
+export const CARD_HEIGHT = 160;
+export const SPOUSE_GAP = 64;
+export const SIBLING_GAP = 48;
+export const FAMILY_GAP = 80;
+export const VERTICAL_GAP = 120;
 
 /**
  * Calculates hierarchical generation levels for all members.
@@ -350,7 +350,8 @@ export function buildFlowElements(
     onAddSibling: (m: FamilyMember) => void;
     onEdit: (m: FamilyMember) => void;
     onDelete: (m: FamilyMember) => void;
-  }
+  },
+  isDragging = false
 ) {
   const memberMap = new Map<string, FamilyMember>();
   members.forEach((m) => memberMap.set(m.id, m));
@@ -389,6 +390,9 @@ export function buildFlowElements(
         targetHandle: 'left',
         type: 'spouseEdge',
         animated: false,
+        data: {
+          isDragging,
+        },
       });
     });
   });
@@ -444,7 +448,23 @@ export function buildFlowElements(
       midY = parent1.position.y + CARD_HEIGHT;
     }
 
-    children.forEach((child) => {
+    const maxParentBottom = Math.max(
+      parent1.position.y + CARD_HEIGHT,
+      parent2 ? parent2.position.y + CARD_HEIGHT : 0
+    );
+    const minChildTop = Math.min(...children.map((c) => c.position.y));
+    const busY =
+      minChildTop > maxParentBottom + 40
+        ? Math.round(maxParentBottom + (minChildTop - maxParentBottom) * 0.45)
+        : maxParentBottom + 35;
+
+    const obstacles = members.map((m) => ({
+      id: m.id,
+      x: m.position.x,
+      y: m.position.y,
+    }));
+
+    children.forEach((child, index) => {
       edges.push({
         id: `branch-${unionKey}-child-${child.id}`,
         source: parent1.id,
@@ -457,18 +477,23 @@ export function buildFlowElements(
           parent2Id: parent2?.id,
           midX,
           midY,
+          busY,
           childCenterX: child.position.x + CARD_WIDTH / 2,
           childTopY: child.position.y,
+          siblingIndex: index,
+          siblingCount: children.length,
+          obstacles,
+          isDragging,
         },
         style: {
-          stroke: '#a3a3a3',
-          strokeWidth: 1.25,
+          stroke: '#94a3b8',
+          strokeWidth: 1.5,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 7,
           height: 7,
-          color: '#a3a3a3',
+          color: '#94a3b8',
         },
       });
     });

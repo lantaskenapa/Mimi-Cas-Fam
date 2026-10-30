@@ -31,9 +31,9 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const [isDeceased, setIsDeceased] = useState(false);
   const [birthPlace, setBirthPlace] = useState('');
   const [relationRole, setRelationRole] = useState('');
-  const [occupation, setOccupation] = useState('');
   const [notes, setNotes] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [imageError, setImageError] = useState<string | null>(null);
 
   // Selected relationships when editing
   const [selectedSpouseIds, setSelectedSpouseIds] = useState<string[]>([]);
@@ -42,6 +42,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
+    setImageError(null);
 
     if (initialData && mode === 'edit') {
       setFullName(initialData.fullName || '');
@@ -51,7 +52,6 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setIsDeceased(Boolean(initialData.isDeceased));
       setBirthPlace(initialData.birthPlace || '');
       setRelationRole(initialData.relationRole || '');
-      setOccupation(initialData.occupation || '');
       setNotes(initialData.notes || '');
       setPhotoUrl(initialData.photoUrl || '');
       setSelectedSpouseIds(initialData.spouseIds || []);
@@ -64,7 +64,6 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setDeathYear('');
       setIsDeceased(false);
       setBirthPlace('');
-      setOccupation('');
       setNotes('');
       setPhotoUrl('');
       setSelectedSpouseIds([]);
@@ -103,10 +102,11 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   if (!isOpen) return null;
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageError(null);
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran foto terlalu besar. Maksimal 2MB.');
+        setImageError('Ukuran foto terlalu besar. Maksimal 2MB.');
         return;
       }
       const reader = new FileReader();
@@ -131,7 +131,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       isDeceased,
       birthPlace: birthPlace.trim(),
       relationRole: relationRole.trim(),
-      occupation: occupation.trim(),
+      occupation: (mode === 'edit' && initialData?.occupation) || '',
       notes: notes.trim(),
       photoUrl,
       spouseIds: selectedSpouseIds,
@@ -235,6 +235,12 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             </div>
           </div>
 
+          {imageError && (
+            <div className="p-2.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg">
+              {imageError}
+            </div>
+          )}
+
           {/* Gender */}
           <div>
             <label className="text-xs font-medium text-neutral-700 block mb-1.5">
@@ -307,32 +313,18 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             </div>
           </div>
 
-          {/* Birth Place & Occupation */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-neutral-700 block mb-1.5">
-                Kota / Tempat Lahir
-              </label>
-              <input
-                type="text"
-                value={birthPlace}
-                onChange={(e) => setBirthPlace(e.target.value)}
-                placeholder="Contoh: Yogyakarta"
-                className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-neutral-700 block mb-1.5">
-                Profesi / Pekerjaan
-              </label>
-              <input
-                type="text"
-                value={occupation}
-                onChange={(e) => setOccupation(e.target.value)}
-                placeholder="Contoh: Dosen, Guru, Arsitek"
-                className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
-              />
-            </div>
+          {/* Birth Place */}
+          <div>
+            <label className="text-xs font-medium text-neutral-700 block mb-1.5">
+              Kota / Tempat Lahir
+            </label>
+            <input
+              type="text"
+              value={birthPlace}
+              onChange={(e) => setBirthPlace(e.target.value)}
+              placeholder="Contoh: Yogyakarta"
+              className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+            />
           </div>
 
           {/* Bio & Notes */}

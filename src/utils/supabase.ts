@@ -11,8 +11,11 @@ export interface SupabaseConfig {
 const SUPABASE_CONFIG_KEY = 'kintree_supabase_config_v1';
 
 export const DEFAULT_SUPABASE_CONFIG: SupabaseConfig = {
-  url: 'https://ewxdnroywzaxoxqbinbn.supabase.co',
+  url:
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ||
+    'https://ewxdnroywzaxoxqbinbn.supabase.co',
   anonKey:
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3eGRucm95d3pheG94cWJpbmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMjc4ODAsImV4cCI6MjEwODkwMzg4MH0.xLa5hT0G2ZNf97sKnbsMkBUlwi5V7Xg1V8UWDPJDsdg',
   autoSync: false,
   table: 'family_trees',

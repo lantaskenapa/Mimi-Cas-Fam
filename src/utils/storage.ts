@@ -1,7 +1,8 @@
 import { FamilyMember, FamilyTreeDataset } from '../types/family';
 import { INITIAL_MEMBERS } from '../data/initialData';
+import { autoArrangeTree } from './treeLayout';
 
-const STORAGE_KEY = 'kintree_family_data_v1';
+const STORAGE_KEY = 'kintree_family_data_v3';
 
 export const DEFAULT_DATASET: FamilyTreeDataset = {
   meta: {
@@ -9,7 +10,7 @@ export const DEFAULT_DATASET: FamilyTreeDataset = {
     description: 'Dokumentasi silsilah keluarga besar multi generasi.',
     lastModified: new Date().toISOString(),
   },
-  members: INITIAL_MEMBERS,
+  members: autoArrangeTree(INITIAL_MEMBERS),
 };
 
 export function loadSavedTreeData(): FamilyTreeDataset {

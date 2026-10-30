@@ -199,16 +199,16 @@ export default function App() {
       if (relationContext) {
         const target = relationContext.targetMember;
         if (relationContext.type === 'spouse') {
-          targetX = target.position.x + 280;
+          targetX = target.position.x + 214;
           targetY = target.position.y;
         } else if (relationContext.type === 'child') {
           targetX = target.position.x;
-          targetY = target.position.y + 260;
+          targetY = target.position.y + 280;
         } else if (relationContext.type === 'parent') {
           targetX = target.position.x;
-          targetY = Math.max(40, target.position.y - 260);
+          targetY = Math.max(40, target.position.y - 280);
         } else if (relationContext.type === 'sibling') {
-          targetX = target.position.x + 280;
+          targetX = target.position.x + 198;
           targetY = target.position.y;
         }
       } else if (dataset.members.length > 0) {
@@ -307,7 +307,7 @@ export default function App() {
         setSelectedMemberId(null);
         showToast('Data pohon keluarga berhasil diimpor!');
       } catch (err: any) {
-        alert(err.message || 'Gagal membaca berkas JSON.');
+        showToast(err.message || 'Gagal membaca berkas JSON.');
       }
     };
     reader.readAsText(file);
@@ -378,6 +378,7 @@ export default function App() {
           onToggleMinimap={() => setIsMinimapVisible((v) => !v)}
           exportTrigger={exportTrigger}
           onExportComplete={() => setIsExportingImage(false)}
+          onToast={showToast}
         />
 
         {/* Side Detail Panel */}

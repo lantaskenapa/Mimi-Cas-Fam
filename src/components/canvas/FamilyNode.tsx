@@ -136,13 +136,13 @@ export const FamilyNode = memo(({ data }: NodeProps<any>) => {
         </div>
       )}
 
-      {/* Main Family Card with modern subtle shadow */}
+      {/* Main Family Card: Vertical box with modern rounded corners */}
       <div
         onClick={() => data.onSelect(member)}
-        className={`group relative w-[230px] bg-white rounded-xl transition-all duration-200 cursor-pointer select-none ${
+        className={`group relative w-[150px] min-h-[160px] bg-white rounded-2xl transition-all duration-200 cursor-pointer select-none p-3.5 flex flex-col items-center justify-center text-center ${
           isSelected
-            ? 'ring-2 ring-neutral-900 shadow-[0_10px_28px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.06)] border-neutral-400'
-            : 'border border-neutral-200/90 hover:border-neutral-300 shadow-[0_4px_18px_-2px_rgba(0,0,0,0.06),0_2px_6px_-1px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_25px_-4px_rgba(0,0,0,0.09),0_3px_8px_-1px_rgba(0,0,0,0.04)]'
+            ? 'ring-2 ring-neutral-900 shadow-[0_12px_32px_-4px_rgba(0,0,0,0.14),0_4px_12px_-2px_rgba(0,0,0,0.06)] border-neutral-400'
+            : 'border border-neutral-200/90 hover:border-neutral-300 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.06),0_2px_4px_-1px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.09),0_3px_8px_-1px_rgba(0,0,0,0.04)]'
         }`}
       >
         {/* Target Handles for Connections */}
@@ -171,56 +171,50 @@ export const FamilyNode = memo(({ data }: NodeProps<any>) => {
           className="!w-2 !h-2 !bg-neutral-400 !border-2 !border-white transition-opacity group-hover:opacity-100 opacity-0"
         />
 
-        {/* Minimalist Card Body: Avatar, Name, and Year only */}
-        <div className="p-3.5 flex items-center gap-3">
-          {/* Avatar circle */}
-          <div className="relative shrink-0">
-            {member.photoUrl ? (
-              <img
-                src={member.photoUrl}
-                alt={member.fullName}
-                className="w-11 h-11 rounded-full object-cover border border-neutral-200 shadow-xs"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div
-                className={`w-11 h-11 rounded-full flex items-center justify-center font-semibold text-xs tracking-wider border shadow-xs ${
-                  isMale
-                    ? 'bg-neutral-100 text-neutral-700 border-neutral-200'
-                    : isFemale
-                    ? 'bg-stone-100 text-stone-700 border-stone-200'
-                    : 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                }`}
-              >
-                {getInitials(member.fullName || 'NN')}
-              </div>
-            )}
-            {member.isDeceased && (
-              <span
-                title="Almarhum / Almarhumah"
-                className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-neutral-800 text-[9px] text-white rounded-full flex items-center justify-center border border-white"
-              >
-                ✝
-              </span>
-            )}
-          </div>
-
-          {/* Info: strictly Full Name & Year */}
-          <div className="min-w-0 flex-1">
-            <h4
-              className="text-sm font-semibold text-neutral-900 leading-snug line-clamp-1"
-              title={member.fullName}
+        {/* 1. Foto */}
+        <div className="relative shrink-0 mb-2">
+          {member.photoUrl ? (
+            <img
+              src={member.photoUrl}
+              alt={member.fullName}
+              className="w-14 h-14 rounded-full object-cover border border-neutral-200/90 shadow-2xs"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div
+              className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-sm tracking-wider border shadow-2xs ${
+                isMale
+                  ? 'bg-neutral-100 text-neutral-700 border-neutral-200'
+                  : isFemale
+                  ? 'bg-stone-100 text-stone-700 border-stone-200'
+                  : 'bg-zinc-100 text-zinc-700 border-zinc-200'
+              }`}
             >
-              {member.fullName}
-            </h4>
-
-            {getYearDisplay() && (
-              <p className="text-xs text-neutral-500 font-mono tabular-nums mt-0.5">
-                {getYearDisplay()}
-              </p>
-            )}
-          </div>
+              {getInitials(member.fullName || 'NN')}
+            </div>
+          )}
+          {member.isDeceased && (
+            <span
+              title="Almarhum / Almarhumah"
+              className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-neutral-900 text-[10px] text-white rounded-full flex items-center justify-center border-2 border-white font-serif leading-none shadow-xs"
+            >
+              ✝
+            </span>
+          )}
         </div>
+
+        {/* 2. Nama */}
+        <h4
+          className="w-full text-xs font-semibold text-neutral-900 leading-snug line-clamp-2 text-center break-words px-0.5"
+          title={member.fullName}
+        >
+          {member.fullName}
+        </h4>
+
+        {/* 3. Tahun */}
+        <p className="text-[11px] text-neutral-500 font-mono tabular-nums mt-1 text-center font-medium">
+          {getYearDisplay() || '-'}
+        </p>
       </div>
     </div>
   );

@@ -1,16 +1,28 @@
 import React from 'react';
-import { BaseEdge, EdgeProps } from '@xyflow/react';
+import { BaseEdge, EdgeProps, useInternalNode } from '@xyflow/react';
 import { Heart } from 'lucide-react';
 
 export const SpouseEdge: React.FC<EdgeProps> = ({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
   targetY,
+  data,
   style = {},
   markerEnd,
 }) => {
+  const sourceNode = useInternalNode(source);
+  const targetNode = useInternalNode(target);
+
+  const isDragging = Boolean(
+    (data as any)?.isDragging ||
+      sourceNode?.dragging ||
+      targetNode?.dragging
+  );
+
   // Center between the two spouse nodes
   const midX = (sourceX + targetX) / 2;
   const midY = (sourceY + targetY) / 2;
@@ -20,8 +32,6 @@ export const SpouseEdge: React.FC<EdgeProps> = ({
   const dist = Math.hypot(dx, dy);
 
   // Love badge radius with clear margin:
-  // The badge is a 24x24px circle (radius 12px).
-  // A gap radius of 17px ensures the line stops cleanly BEFORE touching the heart badge.
   const gapRadius = 17;
 
   let path = '';
@@ -43,23 +53,35 @@ export const SpouseEdge: React.FC<EdgeProps> = ({
     const p2X = midX + cosA * gapRadius;
     const p2Y = midY + sinA * gapRadius;
 
-    // Flexible / curved ("lentur") bezier lines when dragged vertically or diagonally:
-    // When sourceY === targetY, this naturally forms straight horizontal segments.
-    const dX1 = p1X - sourceX;
-    const dX2 = targetX - p2X;
+    if (isDragging) {
+      // Lentur ketika di-drag: kurva bezier fleksibel
+      const dX1 = p1X - sourceX;
+      const dX2 = targetX - p2X;
 
-    const cp1X1 = sourceX + dX1 * 0.45;
-    const cp1Y1 = sourceY;
-    const cp1X2 = p1X - dX1 * 0.2;
-    const cp1Y2 = p1Y;
+      const cp1X1 = sourceX + dX1 * 0.45;
+      const cp1Y1 = sourceY;
+      const cp1X2 = p1X - dX1 * 0.2;
+      const cp1Y2 = p1Y;
 
-    const cp2X1 = p2X + dX2 * 0.2;
-    const cp2Y1 = p2Y;
-    const cp2X2 = targetX - dX2 * 0.45;
-    const cp2Y2 = targetY;
+      const cp2X1 = p2X + dX2 * 0.2;
+      const cp2Y1 = p2Y;
+      const cp2X2 = targetX - dX2 * 0.45;
+      const cp2Y2 = targetY;
 
-    // Segment 1 (source to before love) + Segment 2 (after love to target)
-    path = `M ${sourceX} ${sourceY} C ${cp1X1} ${cp1Y1}, ${cp1X2} ${cp1Y2}, ${p1X} ${p1Y} M ${p2X} ${p2Y} C ${cp2X1} ${cp2Y1}, ${cp2X2} ${cp2Y2}, ${targetX} ${targetY}`;
+      path = `M ${sourceX} ${sourceY} C ${cp1X1} ${cp1Y1}, ${cp1X2} ${cp1Y2}, ${p1X} ${p1Y} M ${p2X} ${p2Y} C ${cp2X1} ${cp2Y1}, ${cp2X2} ${cp2Y2}, ${targetX} ${targetY}`;
+    } else {
+      // Kaku (90 derajat horizontal & vertikal): hindari garis diagonal
+      const badgeStopLeft = midX - 15;
+      const badgeStopRight = midX + 15;
+
+      if (Math.abs(sourceY - targetY) > 2) {
+        // Orthogonal 90-degree step to marriage junction
+        path = `M ${sourceX} ${sourceY} L ${badgeStopLeft} ${sourceY} L ${badgeStopLeft} ${midY} M ${badgeStopRight} ${midY} L ${badgeStopRight} ${targetY} L ${targetX} ${targetY}`;
+      } else {
+        // Direct clean horizontal segments
+        path = `M ${sourceX} ${sourceY} L ${badgeStopLeft} ${midY} M ${badgeStopRight} ${midY} L ${targetX} ${targetY}`;
+      }
+    }
   }
 
   return (

@@ -38,6 +38,7 @@ interface FamilyTreeCanvasProps {
   onToggleMinimap: () => void;
   exportTrigger: number;
   onExportComplete: () => void;
+  onToast?: (msg: string) => void;
 }
 
 const nodeTypes = {
@@ -67,23 +68,76 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
   onToggleMinimap,
   exportTrigger,
   onExportComplete,
+  onToast,
 }) => {
   const { zoomIn, zoomOut, fitView, setViewport, getViewport } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [isDraggingNode, setIsDraggingNode] = useState<boolean>(false);
+
+  const onNodeDragStart = useCallback(() => {
+    setIsDraggingNode(true);
+  }, []);
+
+  const onNodeDragStop = useCallback(
+    (_event: any, node: any) => {
+      setIsDraggingNode(false);
+      if (!node || !node.id || !node.position) return;
+
+      const CARD_W = 150;
+      const CARD_H = 160;
+      const MIN_GAP = 24;
+
+      // Automatic card collision separation to maintain >= 20px safe distance
+      let adjustedX = node.position.x;
+      let adjustedY = node.position.y;
+      let hadCollision = false;
+
+      for (const m of members) {
+        if (m.id === node.id) continue;
+        const dx = adjustedX - m.position.x;
+        const dy = adjustedY - m.position.y;
+
+        const overlapX = CARD_W + MIN_GAP - Math.abs(dx);
+        const overlapY = CARD_H + MIN_GAP - Math.abs(dy);
+
+        if (overlapX > 0 && overlapY > 0) {
+          hadCollision = true;
+          if (overlapX < overlapY) {
+            adjustedX += dx >= 0 ? overlapX : -overlapX;
+          } else {
+            adjustedY += dy >= 0 ? overlapY : -overlapY;
+          }
+        }
+      }
+
+      if (hadCollision) {
+        onUpdateMemberPosition(node.id, {
+          x: Math.round(adjustedX),
+          y: Math.round(adjustedY),
+        });
+      }
+    },
+    [members, onUpdateMemberPosition]
+  );
 
   // Generate nodes and edges with callbacks
   const { nodes: initialNodes, edges } = useMemo(() => {
-    return buildFlowElements(members, selectedMemberId, {
-      onSelect: (m) => onSelectMember(m),
-      onOpenDetail,
-      onAddSpouse,
-      onAddChild,
-      onAddParent,
-      onAddSibling,
-      onEdit,
-      onDelete,
-    });
+    return buildFlowElements(
+      members,
+      selectedMemberId,
+      {
+        onSelect: (m) => onSelectMember(m),
+        onOpenDetail,
+        onAddSpouse,
+        onAddChild,
+        onAddParent,
+        onAddSibling,
+        onEdit,
+        onDelete,
+      },
+      isDraggingNode
+    );
   }, [
     members,
     selectedMemberId,
@@ -95,6 +149,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
     onAddSibling,
     onEdit,
     onDelete,
+    isDraggingNode,
   ]);
 
   // Node position drag handler
@@ -145,7 +200,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         ) as HTMLElement;
 
         if (!viewportElement) {
-          alert('Tidak dapat memproses ekspor canvas.');
+          onToast?.('Tidak dapat memproses ekspor canvas.');
           onExportComplete();
           return;
         }
@@ -164,25 +219,19 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         link.download = `${cleanTitle}-${new Date().toISOString().slice(0, 10)}.png`;
         link.href = dataUrl;
         link.click();
+        onToast?.('Gambar pohon keluarga berhasil diekspor!');
       } catch (err) {
         console.error('Failed to export PNG:', err);
-        alert('Gagal mengekspor gambar. Silakan coba kembali.');
+        onToast?.('Gagal mengekspor gambar. Silakan coba kembali.');
       } finally {
         onExportComplete();
       }
     };
 
     performExport();
-  }, [exportTrigger, treeTitle, onExportComplete]);
+  }, [exportTrigger, treeTitle, onExportComplete, onToast]);
 
-  // Initial fit view on mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fitView({ padding: 0.25, duration: 300 });
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [fitView]);
-
+  // Initial fit view on mount handled cleanly via fitViewOptions on ReactFlow
   return (
     <div ref={reactFlowWrapper} className="w-full h-full relative bg-neutral-50">
       <ReactFlow
@@ -191,9 +240,12 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
+        onNodeDragStart={onNodeDragStart}
+        onNodeDragStop={onNodeDragStop}
         onPaneClick={handlePaneClick}
         onViewportChange={onViewportChange}
         fitView
+        fitViewOptions={{ padding: 0.25 }}
         minZoom={0.2}
         maxZoom={2.5}
         defaultEdgeOptions={{

@@ -12,6 +12,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script>
+      window.addEventListener('error', function (e) {
+        if (
+          e &&
+          e.message &&
+          (e.message.indexOf('ResizeObserver loop completed with undelivered notifications') !== -1 ||
+            e.message.indexOf('ResizeObserver loop limit exceeded') !== -1)
+        ) {
+          e.stopImmediatePropagation();
+          e.stopPropagation();
+          e.preventDefault();
+          return true;
+        }
+      }, true);
+    </script>
   </head>
   <body class="bg-neutral-50 text-neutral-900 antialiased overflow-hidden select-none font-['Plus_Jakarta_Sans',sans-serif]">
     <div id="root"></div>
