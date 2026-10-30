@@ -27,6 +27,7 @@ export function loadSavedTreeData(): FamilyTreeDataset {
       parsed.members = parsed.members.map((m: FamilyMember) => ({
         ...m,
         relationRole: '',
+        birthPlace: m.birthPlace === 'Yogyakarta' ? 'Jatibarang' : m.birthPlace,
       }));
       return parsed;
     }

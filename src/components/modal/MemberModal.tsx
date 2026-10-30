@@ -381,7 +381,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
               type="text"
               value={birthPlace}
               onChange={(e) => setBirthPlace(e.target.value)}
-              placeholder="Contoh: Yogyakarta"
+              placeholder="Contoh: Jatibarang"
               className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
             />
           </div>
