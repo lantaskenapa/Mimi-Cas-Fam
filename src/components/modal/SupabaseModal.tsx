@@ -6,6 +6,9 @@ import {
   testConnection,
   saveTreeToCloud,
   loadTreeFromCloud,
+  PERMANENT_SUPABASE_URL,
+  PERMANENT_SUPABASE_ANON_KEY,
+  DEFAULT_SUPABASE_CONFIG,
 } from '../../utils/supabase';
 import { FamilyTreeDataset } from '../../types/family';
 import {

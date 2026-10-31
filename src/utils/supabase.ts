@@ -10,12 +10,19 @@ export interface SupabaseConfig {
 
 const SUPABASE_CONFIG_KEY = 'kintree_supabase_config_v1';
 
+export const PERMANENT_SUPABASE_URL =
+  'https://ewxdnroywzaxoxqbinbn.supabase.co';
+export const PERMANENT_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3eGRucm95d3pheG94cWJpbmJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzMjc4ODAsImV4cCI6MjEwODkwMzg4MH0.xLa5hT0G2ZNf97sKnbsMkBUlwi5V7Xg1V8UWDPJDsdg';
+
 export const DEFAULT_SUPABASE_CONFIG: SupabaseConfig = {
   url:
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || '',
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ||
+    PERMANENT_SUPABASE_URL,
   anonKey:
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || '',
-  autoSync: false,
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
+    PERMANENT_SUPABASE_ANON_KEY,
+  autoSync: true,
   table: 'family_trees',
 };
 
@@ -24,12 +31,21 @@ export function loadSupabaseConfig(): SupabaseConfig {
     const raw = localStorage.getItem(SUPABASE_CONFIG_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      const url =
+        parsed.url && parsed.url.trim() !== ''
+          ? parsed.url.trim()
+          : DEFAULT_SUPABASE_CONFIG.url;
+      const anonKey =
+        parsed.anonKey && parsed.anonKey.trim() !== ''
+          ? parsed.anonKey.trim()
+          : DEFAULT_SUPABASE_CONFIG.anonKey;
       return {
         ...DEFAULT_SUPABASE_CONFIG,
         ...parsed,
-        url: parsed.url || DEFAULT_SUPABASE_CONFIG.url,
-        anonKey: parsed.anonKey || DEFAULT_SUPABASE_CONFIG.anonKey,
+        url,
+        anonKey,
         autoSync: parsed.autoSync !== undefined ? parsed.autoSync : true,
+        table: parsed.table || DEFAULT_SUPABASE_CONFIG.table,
       };
     }
   } catch (e) {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FamilyMember, FamilyTreeDataset } from './types/family';
 import {
   loadSavedTreeData,
@@ -45,6 +45,9 @@ export default function App() {
   const [exportTrigger, setExportTrigger] = useState(0);
   const [isExportingImage, setIsExportingImage] = useState(false);
 
+  // Initial cloud sync tracker to prevent overwriting cloud on mount
+  const isInitialCloudSyncDone = useRef(false);
+
   // Toast notification & cloud sync status
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'disconnected'>(() => {
@@ -77,15 +80,24 @@ export default function App() {
               .catch(() => setCloudSyncStatus('error'));
           }
         })
-        .catch(() => setCloudSyncStatus('error'));
+        .catch(() => setCloudSyncStatus('error'))
+        .finally(() => {
+          isInitialCloudSyncDone.current = true;
+        });
     } else {
       setCloudSyncStatus('disconnected');
+      isInitialCloudSyncDone.current = true;
     }
   }, []);
 
-  // Persist to localStorage whenever dataset changes, and auto-sync to Supabase
+  // Persist to localStorage whenever dataset changes, and auto-sync to Supabase once initial fetch completes
   useEffect(() => {
     saveTreeData(dataset);
+
+    if (!isInitialCloudSyncDone.current) {
+      return;
+    }
+
     const config = loadSupabaseConfig();
     if (config.autoSync && config.url && config.anonKey) {
       setCloudSyncStatus('syncing');
