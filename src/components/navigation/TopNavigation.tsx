@@ -15,6 +15,8 @@ import {
   Cloud,
   Check,
   RefreshCw,
+  GitFork,
+  BookOpen,
 } from 'lucide-react';
 
 interface TopNavigationProps {
@@ -29,6 +31,8 @@ interface TopNavigationProps {
   onOpenSupabaseModal: () => void;
   isExportingImage?: boolean;
   cloudSyncStatus?: 'synced' | 'syncing' | 'error' | 'disconnected';
+  activeView?: 'tree' | 'fambook';
+  onChangeView?: (view: 'tree' | 'fambook') => void;
 }
 
 export const TopNavigation: React.FC<TopNavigationProps> = ({
@@ -43,6 +47,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
   onOpenSupabaseModal,
   isExportingImage = false,
   cloudSyncStatus = 'synced',
+  activeView = 'tree',
+  onChangeView,
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [currentTitle, setCurrentTitle] = useState(treeTitle);
@@ -77,14 +83,45 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
   };
 
   return (
-    <header className="h-14 bg-white border-b border-neutral-200 px-4 md:px-6 flex items-center justify-between gap-4 z-40 select-none">
-      {/* Zone 1: Brand Logo */}
-      <div className="flex items-center shrink-0">
+    <header className="h-14 bg-white border-b border-neutral-200 px-3 sm:px-4 md:px-6 flex items-center justify-between gap-2 sm:gap-4 z-40 select-none">
+      {/* Zone 1: Brand Logo & View Switcher */}
+      <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
         <img
           src="/assets/aistudio/mimi-cas-02-01-01_0747f8f8.png"
           alt="mimi - cas ; fam."
-          className="h-8 md:h-9 w-auto object-contain shrink-0"
+          className="h-7 sm:h-8 md:h-9 w-auto object-contain shrink-0"
         />
+
+        {/* View Switcher: Pohon Silsilah vs Fam Book */}
+        {onChangeView && (
+          <div className="flex items-center p-0.5 bg-neutral-100 rounded-lg border border-neutral-200/70">
+            <button
+              onClick={() => onChangeView('tree')}
+              className={`px-2.5 py-1 text-xs rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeView === 'tree'
+                  ? 'bg-white text-neutral-900 shadow-2xs font-medium'
+                  : 'text-neutral-500 hover:text-neutral-800'
+              }`}
+              title="Bagan Pohon Silsilah"
+            >
+              <GitFork className="w-3.5 h-3.5 rotate-180" />
+              <span className="hidden sm:inline">Pohon</span>
+            </button>
+
+            <button
+              onClick={() => onChangeView('fambook')}
+              className={`px-2.5 py-1 text-xs rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeView === 'fambook'
+                  ? 'bg-white text-neutral-900 shadow-2xs font-medium'
+                  : 'text-neutral-500 hover:text-neutral-800'
+              }`}
+              title="Fam Book"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-neutral-700" />
+              <span>Fam Book</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Zone 2: Search Member in Tree (Always in header for both mobile and desktop) */}
@@ -152,31 +189,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
         )}
       </div>
 
-      {/* Zone 3: Actions & 3-Dots Menu */}
+      {/* Zone 3: 3-Dots Menu */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-        {/* Desktop: Add Member Primary Button */}
-        <button
-          onClick={onAddNewMember}
-          className="hidden sm:flex px-3 py-1.5 text-xs font-medium text-white bg-neutral-900 hover:bg-neutral-800 rounded-lg shadow-2xs transition-colors items-center gap-1.5 whitespace-nowrap"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Tambah Anggota</span>
-        </button>
-
-        {/* Mobile: Quick Add Button */}
-        <button
-          onClick={onAddNewMember}
-          title="Tambah Anggota"
-          className="sm:hidden p-1.5 text-white bg-neutral-900 hover:bg-neutral-800 rounded-lg shadow-2xs transition-colors flex items-center justify-center shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-
         {/* 3-Dots Menu (MoreVertical) */}
         <div className="relative">
           <button
             onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
-            className={`p-1.5 sm:p-2 rounded-lg border transition-colors flex items-center justify-center ${
+            className={`p-1.5 sm:p-2 rounded-lg border transition-colors flex items-center justify-center cursor-pointer ${
               isSettingsMenuOpen
                 ? 'bg-neutral-100 text-neutral-900 border-neutral-300'
                 : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 border-neutral-200'
@@ -194,10 +213,10 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
                 onClick={() => setIsSettingsMenuOpen(false)}
               />
               <div className="absolute right-0 top-full mt-1.5 w-64 bg-white border border-neutral-200 rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                {/* Mobile Quick Actions inside 3-dots */}
-                <div className="md:hidden border-b border-neutral-100 pb-1 mb-1">
+                {/* Tambah Anggota Baru */}
+                <div className="border-b border-neutral-100 pb-1 mb-1">
                   <div className="px-3 py-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
-                    Aksi Pohon
+                    Kelola Silsilah
                   </div>
 
                   <button
@@ -205,7 +224,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
                       setIsSettingsMenuOpen(false);
                       onAddNewMember();
                     }}
-                    className="w-full px-3 py-2 text-left text-xs text-neutral-900 hover:bg-neutral-50 flex items-center gap-2.5 font-medium transition-colors"
+                    className="w-full px-3 py-2 text-left text-xs text-neutral-900 hover:bg-neutral-50 flex items-center gap-2.5 font-medium transition-colors cursor-pointer"
                   >
                     <Plus className="w-4 h-4 text-neutral-900" />
                     <span>Tambah Anggota Baru</span>

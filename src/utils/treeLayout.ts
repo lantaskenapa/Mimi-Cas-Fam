@@ -80,6 +80,71 @@ export function calculateGenerations(members: FamilyMember[]): Map<string, numbe
   return generations;
 }
 
+/**
+ * Compares two members to determine their birth order (oldest to youngest).
+ * Priority:
+ * 1. Explicit birthOrder (e.g. 1, 2, 3...)
+ * 2. Birth date / year (earlier date/year comes first)
+ * 3. Parent children order if provided (manual ordering)
+ * 4. Alphabetical by full name
+ */
+export function compareMembersBirthOrder(
+  a: FamilyMember,
+  b: FamilyMember,
+  parentChildrenOrder?: string[]
+): number {
+  if (a.id === b.id) return 0;
+
+  // 1. Explicit birthOrder (Anak ke-1, Anak ke-2)
+  if (a.birthOrder !== undefined && b.birthOrder !== undefined && a.birthOrder !== b.birthOrder) {
+    return a.birthOrder - b.birthOrder;
+  }
+  if (a.birthOrder !== undefined && b.birthOrder === undefined) return -1;
+  if (a.birthOrder === undefined && b.birthOrder !== undefined) return 1;
+
+  // 2. Parse birth date / year
+  const parseBirthTime = (m: FamilyMember): number | null => {
+    if (m.birthDate && m.birthDate.trim()) {
+      const parsed = Date.parse(m.birthDate);
+      if (!isNaN(parsed)) return parsed;
+    }
+    if (m.birthYear && m.birthYear.trim()) {
+      const yearMatch = m.birthYear.match(/\b(18|19|20)\d{2}\b/);
+      if (yearMatch) {
+        const year = parseInt(yearMatch[0], 10);
+        const parsed = Date.parse(m.birthYear);
+        if (!isNaN(parsed)) return parsed;
+        return new Date(year, 0, 1).getTime();
+      }
+    }
+    return null;
+  };
+
+  const tA = parseBirthTime(a);
+  const tB = parseBirthTime(b);
+
+  if (tA !== null && tB !== null && tA !== tB) {
+    // Older (earlier year/date) comes first
+    return tA - tB;
+  }
+  if (tA !== null && tB === null) return -1;
+  if (tA === null && tB !== null) return 1;
+
+  // 3. Fallback to order in parentChildrenOrder if provided
+  if (parentChildrenOrder && parentChildrenOrder.length > 0) {
+    const idxA = parentChildrenOrder.indexOf(a.id);
+    const idxB = parentChildrenOrder.indexOf(b.id);
+    if (idxA !== -1 && idxB !== -1 && idxA !== idxB) {
+      return idxA - idxB;
+    }
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+  }
+
+  // 4. Fallback to name
+  return a.fullName.localeCompare(b.fullName);
+}
+
 interface FamilyUnit {
   id: string;
   primary: FamilyMember;
@@ -146,13 +211,20 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
 
       const allMemberIds = [member.id, ...spouses.map((s) => s.id)];
 
-      // Collect all collective children
-      const collectiveChildren = Array.from(
+      // Collect all collective children, sorted from oldest to youngest
+      const collectiveChildrenRaw = Array.from(
         new Set([
           ...member.childrenIds,
           ...spouses.flatMap((s) => s.childrenIds),
         ])
       );
+      const collectiveChildrenMembers = collectiveChildrenRaw
+        .map((cId) => memberMap.get(cId))
+        .filter(Boolean) as FamilyMember[];
+      collectiveChildrenMembers.sort((c1, c2) =>
+        compareMembersBirthOrder(c1, c2, member.childrenIds)
+      );
+      const collectiveChildren = collectiveChildrenMembers.map((c) => c.id);
 
       // Width required for this couple / unit
       const unitWidth =
@@ -185,7 +257,7 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
   sortedGens.forEach((gen) => {
     const units = unitsByGen.get(gen) || [];
 
-    // Sort units in generation by parent horizontal midpoint to keep family branches cleanly separated
+    // Sort units in generation by parent horizontal midpoint, then by birth order for siblings
     units.sort((a, b) => {
       const aParentUnits = a.parentIds.map((pId) => unitMap.get(pId)).filter(Boolean) as FamilyUnit[];
       const bParentUnits = b.parentIds.map((pId) => unitMap.get(pId)).filter(Boolean) as FamilyUnit[];
@@ -196,6 +268,16 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
       const bParentX = bParentUnits.length > 0
         ? bParentUnits.reduce((sum, pu) => sum + (pu.x + pu.unitWidth / 2), 0) / bParentUnits.length
         : b.x;
+
+      if (Math.abs(aParentX - bParentX) > 1) {
+        return aParentX - bParentX;
+      }
+
+      // If they are siblings of the same parent(s), sort from oldest to youngest (left to right)
+      const shareParents = a.parentIds.length > 0 && a.parentIds.some((pId) => b.parentIds.includes(pId));
+      if (shareParents) {
+        return compareMembersBirthOrder(a.primary, b.primary);
+      }
 
       return aParentX - bParentX;
     });
@@ -216,32 +298,24 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
           parentUnits.reduce((sum, pu) => sum + (pu.x + pu.unitWidth / 2), 0) /
           parentUnits.length;
 
-        // Find sibling units in this generation
-        const siblingsInGen = units.filter(
-          (u) =>
-            u.id !== unit.id &&
-            u.parentIds.some((pid) => unit.parentIds.includes(pid))
-        );
+        // Find all sibling units in this generation, sorted from oldest to youngest (left to right)
+        const allSiblings = units
+          .filter((u) => u.parentIds.some((pid) => unit.parentIds.includes(pid)))
+          .sort((s1, s2) => compareMembersBirthOrder(s1.primary, s2.primary));
 
-        if (siblingsInGen.length === 0) {
+        if (allSiblings.length <= 1) {
           // Single child unit: center directly under parents
           preferredX = avgParentMidX - unit.unitWidth / 2;
         } else {
           // Multiple siblings: center the sibling group under parents
-          const siblingIndex = units
-            .filter((u) => u.parentIds.some((pid) => unit.parentIds.includes(pid)))
-            .indexOf(unit);
+          const siblingIndex = allSiblings.findIndex((s) => s.id === unit.id);
 
           const totalSiblingWidth =
-            siblingsInGen.reduce((sum, s) => sum + s.unitWidth + SIBLING_GAP, 0) +
-            unit.unitWidth;
+            allSiblings.reduce((sum, s) => sum + s.unitWidth + SIBLING_GAP, 0) - SIBLING_GAP;
 
           const groupStartX = avgParentMidX - totalSiblingWidth / 2;
           // Calculate offset up to this sibling
           let offset = 0;
-          const allSiblings = units.filter((u) =>
-            u.parentIds.some((pid) => unit.parentIds.includes(pid))
-          );
           for (let i = 0; i < siblingIndex; i++) {
             offset += allSiblings[i].unitWidth + SIBLING_GAP;
           }
@@ -713,6 +787,9 @@ export function buildFlowElements(
       midY = parent1.position.y + CARD_HEIGHT;
     }
 
+    // Sort children strictly from left to right (oldest to youngest)
+    children.sort((c1, c2) => c1.position.x - c2.position.x);
+
     const maxParentBottom = Math.max(
       parent1.position.y + CARD_HEIGHT,
       parent2 ? parent2.position.y + CARD_HEIGHT : 0
@@ -758,17 +835,17 @@ export function buildFlowElements(
         ? Math.round(union.maxParentBottom + gap * 0.45)
         : union.maxParentBottom + 35;
 
-    // Track slots with 18px separation: 0, +18, -18, +36, -36
-    const trackOffsets = [0, 18, -18, 36, -36, 54, -54];
+    // Track slots with 20px separation: 0, +20, -20, +40, -40, +60, -60
+    const trackOffsets = [0, 20, -20, 40, -40, 60, -60];
     let chosenBusY = baseBusY;
 
     for (const offset of trackOffsets) {
       const candidateBusY = baseBusY + offset;
 
-      // Safe margin >= 22px from parent bottom and child top
+      // Safe margin >= 20px from parent bottom and child top
       if (
-        candidateBusY < union.maxParentBottom + 22 ||
-        candidateBusY > union.minChildTop - 22
+        candidateBusY < union.maxParentBottom + 20 ||
+        candidateBusY > union.minChildTop - 20
       ) {
         continue;
       }
@@ -778,7 +855,7 @@ export function buildFlowElements(
         const sameTier = Math.abs(allocated.tierY - union.maxParentBottom) < 60;
         if (!sameTier) return false;
 
-        const altitudeTooClose = Math.abs(allocated.busY - candidateBusY) < 14;
+        const altitudeTooClose = Math.abs(allocated.busY - candidateBusY) < 18;
         if (!altitudeTooClose) return false;
 
         const horizontalOverlap = !(

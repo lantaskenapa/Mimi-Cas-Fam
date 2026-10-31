@@ -14,6 +14,8 @@ import {
   Calendar,
   BookOpen,
   ArrowRight,
+  Home,
+  User,
 } from 'lucide-react';
 
 interface SideDetailPanelProps {
@@ -156,10 +158,37 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
 
         {/* Quick Facts List */}
         <div className="space-y-2.5 text-xs">
+          {/* Jenis Kelamin */}
+          <div className="flex items-center gap-2.5 text-neutral-600">
+            <User className="w-4 h-4 text-neutral-400 shrink-0" />
+            <span>
+              Jenis Kelamin:{' '}
+              <strong className="font-semibold text-neutral-800">
+                {member.gender === 'male'
+                  ? 'Laki-laki'
+                  : member.gender === 'female'
+                  ? 'Perempuan'
+                  : 'Lainnya'}
+              </strong>
+            </span>
+          </div>
+
           {member.birthPlace && (
             <div className="flex items-center gap-2.5 text-neutral-600">
               <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
               <span>Lahir di {member.birthPlace}</span>
+            </div>
+          )}
+
+          {member.currentResidence && (
+            <div className="flex items-center gap-2.5 text-neutral-600">
+              <Home className="w-4 h-4 text-neutral-400 shrink-0" />
+              <span>
+                Domisili Sekarang:{' '}
+                <strong className="font-semibold text-neutral-800">
+                  {member.currentResidence}
+                </strong>
+              </span>
             </div>
           )}
 

@@ -66,7 +66,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
   onExportComplete,
   onToast,
 }) => {
-  const { zoomIn, zoomOut, fitView, setViewport, getViewport } = useReactFlow();
+  const { zoomIn, zoomOut, fitView, setViewport, getViewport, setCenter } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [isDraggingNode, setIsDraggingNode] = useState<boolean>(false);
@@ -78,11 +78,12 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
     [members, selectedMemberId]
   );
 
-  // Smart default direction based on whether selected member has parents or children
+  // Smart default direction for relationship highlight based on ancestry
   useEffect(() => {
     if (!selectedMemberId) return;
     const member = members.find((m) => m.id === selectedMemberId);
     if (!member) return;
+
     if ((!member.parentIds || member.parentIds.length === 0) && member.childrenIds && member.childrenIds.length > 0) {
       setHighlightDirection('descendants');
     } else if (member.parentIds && member.parentIds.length > 0 && (!member.childrenIds || member.childrenIds.length === 0)) {

@@ -31,7 +31,10 @@ export const MemberModal: React.FC<MemberModalProps> = ({
   const [deathYear, setDeathYear] = useState('');
   const [isDeceased, setIsDeceased] = useState(false);
   const [birthPlace, setBirthPlace] = useState('');
+  const [currentResidence, setCurrentResidence] = useState('');
   const [relationRole, setRelationRole] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [birthOrder, setBirthOrder] = useState('');
   const [notes, setNotes] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [imageError, setImageError] = useState<string | null>(null);
@@ -54,7 +57,10 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setDeathYear(initialData.deathYear || '');
       setIsDeceased(Boolean(initialData.isDeceased));
       setBirthPlace(initialData.birthPlace || '');
+      setCurrentResidence(initialData.currentResidence || '');
       setRelationRole(initialData.relationRole || '');
+      setOccupation(initialData.occupation || '');
+      setBirthOrder(initialData.birthOrder !== undefined ? String(initialData.birthOrder) : '');
       setNotes(initialData.notes || '');
       setPhotoUrl(initialData.photoUrl || '');
       setSelectedSpouseIds(initialData.spouseIds || []);
@@ -67,6 +73,10 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       setDeathYear('');
       setIsDeceased(false);
       setBirthPlace('');
+      setCurrentResidence('');
+      setRelationRole('');
+      setOccupation('');
+      setBirthOrder('');
       setNotes('');
       setPhotoUrl('');
       setSelectedSpouseIds([]);
@@ -150,8 +160,10 @@ export const MemberModal: React.FC<MemberModalProps> = ({
       deathYear: isDeceased ? deathYear.trim() : '',
       isDeceased,
       birthPlace: birthPlace.trim(),
+      currentResidence: currentResidence.trim(),
       relationRole: relationRole.trim(),
-      occupation: (mode === 'edit' && initialData?.occupation) || '',
+      occupation: occupation.trim(),
+      birthOrder: birthOrder.trim() ? parseInt(birthOrder.trim(), 10) : undefined,
       notes: notes.trim(),
       photoUrl,
       spouseIds: selectedSpouseIds,
@@ -373,18 +385,70 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             </div>
           </div>
 
-          {/* Birth Place */}
+          {/* Birth Place, Domisili Sekarang & Occupation */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-neutral-700 block mb-1.5">
+                Kota / Tempat Lahir
+              </label>
+              <input
+                type="text"
+                value={birthPlace}
+                onChange={(e) => setBirthPlace(e.target.value)}
+                placeholder="Contoh: Jatibarang"
+                className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-neutral-700 block mb-1.5">
+                Domisili Sekarang
+              </label>
+              <input
+                type="text"
+                value={currentResidence}
+                onChange={(e) => setCurrentResidence(e.target.value)}
+                placeholder="Contoh: Jakarta Selatan, DKI Jakarta"
+                className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-neutral-700 block mb-1.5">
+                Pekerjaan / Profesi
+              </label>
+              <input
+                type="text"
+                value={occupation}
+                onChange={(e) => setOccupation(e.target.value)}
+                placeholder="Contoh: Dosen Teknik"
+                className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Urutan Kelahiran Manual (Anak ke-) */}
           <div>
-            <label className="text-xs font-medium text-neutral-700 block mb-1.5">
-              Kota / Tempat Lahir
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-neutral-700">
+                Urutan Kelahiran (Anak ke-)
+              </label>
+              <span className="text-[11px] text-neutral-400">
+                Opsional / Penyesuaian manual
+              </span>
+            </div>
             <input
-              type="text"
-              value={birthPlace}
-              onChange={(e) => setBirthPlace(e.target.value)}
-              placeholder="Contoh: Jatibarang"
+              type="number"
+              min="1"
+              max="50"
+              value={birthOrder}
+              onChange={(e) => setBirthOrder(e.target.value)}
+              placeholder="Contoh: 1 (Anak pertama), 2 (Anak kedua)..."
               className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
             />
+            <p className="text-[10px] text-neutral-500 mt-1">
+              Jika dikosongkan, urutan anak otomatis ditentukan berdasarkan tanggal/tahun lahir (tertua ke termuda).
+            </p>
           </div>
 
           {/* Keterangan */}

@@ -19,6 +19,7 @@ import { SideDetailPanel } from './components/panel/SideDetailPanel';
 import { MemberModal } from './components/modal/MemberModal';
 import { DeleteConfirmModal } from './components/modal/DeleteConfirmModal';
 import { SupabaseModal } from './components/modal/SupabaseModal';
+import { FamBookView } from './components/fambook/FamBookView';
 import { loadSupabaseConfig, saveTreeToCloud, loadTreeFromCloud } from './utils/supabase';
 import { Check, AlertCircle } from 'lucide-react';
 
@@ -26,6 +27,7 @@ export default function App() {
   const [dataset, setDataset] = useState<FamilyTreeDataset>(() =>
     loadSavedTreeData()
   );
+  const [activeView, setActiveView] = useState<'tree' | 'fambook'>('tree');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
@@ -272,9 +274,12 @@ export default function App() {
         fullName: formData.fullName || 'Tanpa Nama',
         gender: formData.gender || 'male',
         birthYear: formData.birthYear || '',
+        birthDate: formData.birthDate || '',
+        birthOrder: formData.birthOrder,
         deathYear: formData.deathYear || '',
         isDeceased: formData.isDeceased || false,
         birthPlace: formData.birthPlace || '',
+        currentResidence: formData.currentResidence || '',
         relationRole: formData.relationRole || '',
         occupation: formData.occupation || '',
         notes: formData.notes || '',
@@ -464,6 +469,21 @@ export default function App() {
     showToast('Pohon keluarga telah dikosongkan');
   };
 
+  const handleSelectMemberInTree = (member: FamilyMember) => {
+    setSelectedMemberId(member.id);
+    setActiveView('tree');
+    setIsSidePanelOpen(true);
+  };
+
+  const handleAddChildToFamily = (targetParent: FamilyMember, coParent?: FamilyMember) => {
+    setModalMode('create');
+    setRelationContext({
+      type: 'child',
+      targetMember: targetParent,
+    });
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="flex flex-col w-screen h-screen overflow-hidden bg-neutral-50 text-neutral-900">
       {/* Top Navigation */}
@@ -471,7 +491,10 @@ export default function App() {
         treeTitle={dataset.meta.title}
         onUpdateTitle={handleUpdateTitle}
         members={dataset.members}
-        onSelectMember={(m) => setSelectedMemberId(m.id)}
+        onSelectMember={(m) => {
+          setSelectedMemberId(m.id);
+          setActiveView('tree');
+        }}
         onAddNewMember={handleAddNewMember}
         onExportPNG={handleExportPNG}
         onExportJSON={handleExportJSON}
@@ -479,34 +502,55 @@ export default function App() {
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         isExportingImage={isExportingImage}
         cloudSyncStatus={cloudSyncStatus}
+        activeView={activeView}
+        onChangeView={setActiveView}
       />
 
-      {/* Main Canvas Area */}
+      {/* Main Area: Tree Canvas or Fam Book */}
       <main className="flex-1 relative w-full h-[calc(100vh-3.5rem)] overflow-hidden">
-        <FamilyTreeCanvas
-          members={dataset.members}
-          selectedMemberId={selectedMemberId}
-          onSelectMember={(m) => {
-            setSelectedMemberId(m ? m.id : null);
-            if (!m) setIsSidePanelOpen(false);
-          }}
-          onOpenDetail={(m) => {
-            setSelectedMemberId(m.id);
-            setIsSidePanelOpen(true);
-          }}
-          onUpdateMemberPosition={handleUpdateMemberPosition}
-          onAddSpouse={handleAddSpouse}
-          onAddChild={handleAddChild}
-          onAddParent={handleAddParent}
-          onAddSibling={handleAddSibling}
-          onEdit={handleEditMember}
-          onDelete={handleDeleteMember}
-          onAddMemberDirect={handleAddNewMember}
-          treeTitle={dataset.meta.title}
-          exportTrigger={exportTrigger}
-          onExportComplete={() => setIsExportingImage(false)}
-          onToast={showToast}
-        />
+        {activeView === 'tree' ? (
+          <FamilyTreeCanvas
+            members={dataset.members}
+            selectedMemberId={selectedMemberId}
+            onSelectMember={(m) => {
+              setSelectedMemberId(m ? m.id : null);
+              if (!m) setIsSidePanelOpen(false);
+            }}
+            onOpenDetail={(m) => {
+              setSelectedMemberId(m.id);
+              setIsSidePanelOpen(true);
+            }}
+            onUpdateMemberPosition={handleUpdateMemberPosition}
+            onAddSpouse={handleAddSpouse}
+            onAddChild={handleAddChild}
+            onAddParent={handleAddParent}
+            onAddSibling={handleAddSibling}
+            onEdit={handleEditMember}
+            onDelete={handleDeleteMember}
+            onAddMemberDirect={handleAddNewMember}
+            treeTitle={dataset.meta.title}
+            exportTrigger={exportTrigger}
+            onExportComplete={() => setIsExportingImage(false)}
+            onToast={showToast}
+          />
+        ) : (
+          <FamBookView
+            dataset={dataset}
+            onUpdateDataset={setDataset}
+            onSelectMemberInTree={handleSelectMemberInTree}
+            onOpenDetail={(m) => {
+              setSelectedMemberId(m.id);
+              setIsSidePanelOpen(true);
+            }}
+            onEditMember={handleEditMember}
+            onDeleteMember={handleDeleteMember}
+            onAddNewMember={handleAddNewMember}
+            onAddChildToFamily={handleAddChildToFamily}
+            onAddSpouseToMember={handleAddSpouse}
+            onToast={showToast}
+            onSwitchToTree={() => setActiveView('tree')}
+          />
+        )}
 
         {/* Side Detail Panel */}
         <SideDetailPanel
