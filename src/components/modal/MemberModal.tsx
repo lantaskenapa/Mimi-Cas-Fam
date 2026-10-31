@@ -342,11 +342,19 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                   Tahun Lahir
                 </label>
                 <input
-                  type="text"
+                  type="number"
+                  inputMode="numeric"
+                  min="1000"
+                  max="2100"
                   value={birthYear}
-                  onChange={(e) => setBirthYear(e.target.value)}
+                  onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, ''))}
+                  onKeyDown={(e) => {
+                    if (['e', 'E', '+', '-', '.', ','].includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                   placeholder="Contoh: 1975"
-                  className="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+                  className="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
 
@@ -356,11 +364,19 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                     Tahun Wafat
                   </label>
                   <input
-                    type="text"
+                    type="number"
+                    inputMode="numeric"
+                    min="1000"
+                    max="2100"
                     value={deathYear}
-                    onChange={(e) => setDeathYear(e.target.value)}
+                    onChange={(e) => setDeathYear(e.target.value.replace(/\D/g, ''))}
+                    onKeyDown={(e) => {
+                      if (['e', 'E', '+', '-', '.', ','].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                     placeholder="Contoh: 2021"
-                    className="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 text-sm font-mono tabular-nums bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     autoFocus
                   />
                 </div>
@@ -385,7 +401,7 @@ export const MemberModal: React.FC<MemberModalProps> = ({
             </div>
           </div>
 
-          {/* Birth Place, Domisili Sekarang & Occupation */}
+          {/* Birth Place & Domisili Sekarang */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-neutral-700 block mb-1.5">
@@ -409,19 +425,6 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                 value={currentResidence}
                 onChange={(e) => setCurrentResidence(e.target.value)}
                 placeholder="Contoh: Jakarta Selatan, DKI Jakarta"
-                className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
-              />
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="text-xs font-medium text-neutral-700 block mb-1.5">
-                Pekerjaan / Profesi
-              </label>
-              <input
-                type="text"
-                value={occupation}
-                onChange={(e) => setOccupation(e.target.value)}
-                placeholder="Contoh: Dosen Teknik"
                 className="w-full px-3 py-2 text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-neutral-900 focus:border-transparent transition-all"
               />
             </div>
@@ -534,47 +537,6 @@ export const MemberModal: React.FC<MemberModalProps> = ({
                 </div>
               );
             })()
-          )}
-
-          {/* Edit Mode: Spouse Management */}
-          {mode === 'edit' && allMembers.length > 1 && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-neutral-700 flex items-center gap-1.5">
-                <Heart className="w-3.5 h-3.5 text-rose-500" />
-                <span>Pasangan (Suami / Istri)</span>
-              </label>
-              <div className="max-h-36 overflow-y-auto space-y-1 p-2 bg-neutral-50 rounded-xl border border-neutral-200">
-                {allMembers
-                  .filter((m) => m.id !== initialData?.id)
-                  .map((m) => {
-                    const isSpouse = selectedSpouseIds.includes(m.id);
-                    return (
-                      <label
-                        key={m.id}
-                        className={`flex items-center justify-between p-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-                          isSpouse
-                            ? 'bg-rose-50 text-rose-900 font-medium border border-rose-200'
-                            : 'hover:bg-neutral-100 text-neutral-700'
-                        }`}
-                      >
-                        <span>{m.fullName}</span>
-                        <input
-                          type="checkbox"
-                          checked={isSpouse}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedSpouseIds((prev) => Array.from(new Set([...prev, m.id])));
-                            } else {
-                              setSelectedSpouseIds((prev) => prev.filter((id) => id !== m.id));
-                            }
-                          }}
-                          className="rounded border-neutral-300 text-rose-600 focus:ring-rose-500 w-3.5 h-3.5"
-                        />
-                      </label>
-                    );
-                  })}
-              </div>
-            </div>
           )}
 
           {/* Footer Actions */}

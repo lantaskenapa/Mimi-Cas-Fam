@@ -10,7 +10,6 @@ import {
   Users,
   UserPlus,
   MapPin,
-  Briefcase,
   Calendar,
   BookOpen,
   ArrowRight,
@@ -189,13 +188,6 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
                   {member.currentResidence}
                 </strong>
               </span>
-            </div>
-          )}
-
-          {member.occupation && (
-            <div className="flex items-center gap-2.5 text-neutral-600">
-              <Briefcase className="w-4 h-4 text-neutral-400 shrink-0" />
-              <span>{member.occupation}</span>
             </div>
           )}
 

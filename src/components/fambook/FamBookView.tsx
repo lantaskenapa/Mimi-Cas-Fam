@@ -14,7 +14,6 @@ import {
   Pencil,
   Trash2,
   Users,
-  Briefcase,
   MapPin,
   Calendar,
   X,
@@ -203,7 +202,6 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
           p.fullName.toLowerCase().includes(q) ||
           (p.birthPlace && p.birthPlace.toLowerCase().includes(q)) ||
           (p.currentResidence && p.currentResidence.toLowerCase().includes(q)) ||
-          (p.occupation && p.occupation.toLowerCase().includes(q)) ||
           (p.birthYear && p.birthYear.includes(q))
       );
       const inChildren = unit.children.some(
@@ -211,7 +209,6 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
           c.fullName.toLowerCase().includes(q) ||
           (c.birthPlace && c.birthPlace.toLowerCase().includes(q)) ||
           (c.currentResidence && c.currentResidence.toLowerCase().includes(q)) ||
-          (c.occupation && c.occupation.toLowerCase().includes(q)) ||
           (c.birthYear && c.birthYear.includes(q))
       );
 
@@ -229,7 +226,6 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
           m.fullName.toLowerCase().includes(q) ||
           (m.birthPlace && m.birthPlace.toLowerCase().includes(q)) ||
           (m.currentResidence && m.currentResidence.toLowerCase().includes(q)) ||
-          (m.occupation && m.occupation.toLowerCase().includes(q)) ||
           (m.birthYear && m.birthYear.includes(q)) ||
           (m.notes && m.notes.toLowerCase().includes(q))
       );
@@ -502,12 +498,6 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                                         <span className="truncate max-w-[150px] sm:max-w-none">{parent.currentResidence}</span>
                                       </span>
                                     )}
-                                    {parent.occupation && (
-                                      <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded max-w-full">
-                                        <Briefcase className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
-                                        <span className="truncate max-w-[140px] sm:max-w-none">{parent.occupation}</span>
-                                      </span>
-                                    )}
                                   </div>
 
                                   {parent.notes && (
@@ -670,12 +660,6 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                                           <span className="truncate max-w-[140px] sm:max-w-none">{child.currentResidence}</span>
                                         </span>
                                       )}
-                                      {child.occupation && (
-                                        <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded max-w-full">
-                                          <Briefcase className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
-                                          <span className="truncate max-w-[130px] sm:max-w-none">{child.occupation}</span>
-                                        </span>
-                                      )}
                                       {spouses.length > 0 && (
                                         <span className="inline-flex items-center gap-1 text-neutral-700 bg-amber-50/80 border border-amber-200/60 px-1.5 py-0.5 rounded break-words max-w-full">
                                           <Heart className="w-2.5 h-2.5 text-amber-500 shrink-0" />
@@ -800,12 +784,6 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                               <span className="inline-flex items-center gap-1 text-neutral-800 bg-neutral-200/70 px-1.5 py-0.5 rounded font-medium break-words max-w-full">
                                 <span className="text-neutral-500 font-normal">Domisili:</span>
                                 <span className="truncate max-w-[140px] sm:max-w-none">{m.currentResidence}</span>
-                              </span>
-                            )}
-                            {m.occupation && (
-                              <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded max-w-full">
-                                <Briefcase className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
-                                <span className="truncate max-w-[130px] sm:max-w-none">{m.occupation}</span>
                               </span>
                             )}
                             {parents.length > 0 && (
