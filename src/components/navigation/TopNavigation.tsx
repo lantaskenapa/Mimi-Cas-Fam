@@ -12,7 +12,6 @@ import {
   FileCode,
   HelpCircle,
   Database,
-  Cloud,
   Check,
   RefreshCw,
   GitFork,
@@ -189,45 +188,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
         )}
       </div>
 
-      {/* Zone 3: 3-Dots Menu & Cloud Status */}
+      {/* Zone 3: 3-Dots Menu */}
       <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-        {/* Quick Cloud Connection Status indicator */}
-        <button
-          onClick={onOpenSupabaseModal}
-          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-xs transition-colors cursor-pointer ${
-            cloudSyncStatus === 'synced'
-              ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
-              : cloudSyncStatus === 'syncing'
-              ? 'bg-amber-50/90 border-amber-200 text-amber-800 hover:bg-amber-100'
-              : cloudSyncStatus === 'error'
-              ? 'bg-red-50/90 border-red-200 text-red-800 hover:bg-red-100'
-              : 'bg-neutral-100 border-neutral-200 text-neutral-600 hover:bg-neutral-200/80'
-          }`}
-          title="Status Sinkronisasi Supabase (Klik untuk detail / konfigurasi)"
-        >
-          <span
-            className={`w-2 h-2 rounded-full ${
-              cloudSyncStatus === 'synced'
-                ? 'bg-emerald-500 animate-pulse'
-                : cloudSyncStatus === 'syncing'
-                ? 'bg-amber-500 animate-pulse'
-                : cloudSyncStatus === 'error'
-                ? 'bg-red-500'
-                : 'bg-neutral-400'
-            }`}
-          />
-          <Cloud className="w-3.5 h-3.5" />
-          <span className="hidden md:inline font-medium text-[11px]">
-            {cloudSyncStatus === 'synced'
-              ? 'Supabase Aktif'
-              : cloudSyncStatus === 'syncing'
-              ? 'Menyimpan...'
-              : cloudSyncStatus === 'error'
-              ? 'Gagal Sync'
-              : 'Offline'}
-          </span>
-        </button>
-
         {/* 3-Dots Menu (MoreVertical) */}
         <div className="relative">
           <button

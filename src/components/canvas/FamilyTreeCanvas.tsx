@@ -17,6 +17,7 @@ import { FamilyNode } from './FamilyNode';
 import { SpouseEdge } from './SpouseEdge';
 import { ParentChildBranchEdge } from './ParentChildBranchEdge';
 import { CanvasControls } from './CanvasControls';
+import { CreditsNode } from './CreditsNode';
 import { toPng } from 'html-to-image';
 import { X } from 'lucide-react';
 
@@ -41,6 +42,7 @@ interface FamilyTreeCanvasProps {
 
 const nodeTypes = {
   familyNode: FamilyNode as any,
+  creditsNode: CreditsNode as any,
 };
 
 const edgeTypes = {
@@ -93,7 +95,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
 
   // Generate nodes and edges with callbacks and relationship highlight direction
   const { nodes: initialNodes, edges } = useMemo(() => {
-    return buildFlowElements(
+    const elements = buildFlowElements(
       members,
       selectedMemberId,
       {
@@ -110,6 +112,38 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
       highlightDirection,
       isHighlightEnabled
     );
+
+    // Compute coordinate for credits watermark in bottom area of workspace
+    let creditsX = 60;
+    let creditsY = 600;
+
+    if (members.length > 0) {
+      const minX = Math.min(...members.map((m) => m.position.x));
+      const maxX = Math.max(...members.map((m) => m.position.x)) + 150;
+      const maxY = Math.max(...members.map((m) => m.position.y)) + 160;
+
+      const centerX = (minX + maxX) / 2;
+      // Center the credit banner horizontally below the lowest members
+      creditsX = Math.max(30, centerX - 230);
+      creditsY = maxY + 320;
+    }
+
+    const creditsNode = {
+      id: 'workspace-credits',
+      type: 'creditsNode',
+      position: { x: creditsX, y: creditsY },
+      draggable: false,
+      selectable: false,
+      focusable: false,
+      deletable: false,
+      zIndex: -1,
+      data: {},
+    };
+
+    return {
+      nodes: [creditsNode, ...elements.nodes],
+      edges: elements.edges,
+    };
   }, [
     members,
     selectedMemberId,
@@ -152,6 +186,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
     (_event: any, node: any) => {
       setIsDraggingNode(false);
       if (!node || !node.id || !node.position) return;
+      if (node.id === 'workspace-credits') return;
 
       const CARD_W = 150;
       const CARD_H = 160;

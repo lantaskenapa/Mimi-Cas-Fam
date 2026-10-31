@@ -69,3 +69,13 @@
 .react-flow__edge-path {
   stroke-linecap: round;
 }
+
+.font-montserrat-extrabold {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+}
+
+.font-montserrat-regular {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 400;
+}
