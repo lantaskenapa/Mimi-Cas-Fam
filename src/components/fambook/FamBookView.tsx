@@ -310,11 +310,11 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
   };
 
   return (
-    <div className="flex-1 w-full h-[calc(100vh-3.5rem)] overflow-y-auto bg-neutral-50/70 text-neutral-900 select-text">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+    <div className="flex-1 w-full h-[calc(100vh-3.5rem)] overflow-y-auto overflow-x-hidden bg-neutral-50/70 text-neutral-900 select-text">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
         {/* Minimalist Top Header (Linear / Notion style) */}
-        <div className="pb-4 border-b border-neutral-200/70">
-          <div className="flex items-center gap-2">
+        <div className="pb-3 sm:pb-4 border-b border-neutral-200/70">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-neutral-900">
               Fam Book
             </h1>
@@ -328,12 +328,12 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
         </div>
 
         {/* Search Bar & View Tab Controls */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3">
           {/* Tab Filter */}
-          <div className="flex items-center p-0.5 bg-neutral-200/50 rounded-lg border border-neutral-200/60 self-start">
+          <div className="grid grid-cols-2 sm:flex items-center p-0.5 bg-neutral-200/50 rounded-lg border border-neutral-200/60 w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('families')}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all text-center cursor-pointer ${
                 activeTab === 'families'
                   ? 'bg-white text-neutral-900 shadow-2xs'
                   : 'text-neutral-500 hover:text-neutral-800'
@@ -343,7 +343,7 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 sm:py-1 text-xs font-medium rounded-md transition-all text-center cursor-pointer ${
                 activeTab === 'all'
                   ? 'bg-white text-neutral-900 shadow-2xs'
                   : 'text-neutral-500 hover:text-neutral-800'
@@ -354,13 +354,13 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
           </div>
 
           {/* Clean Modern Search Bar */}
-          <div className="relative flex-1 max-w-sm">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari anggota, kota, pekerjaan..."
+              placeholder="Cari anggota, domisili, pekerjaan..."
               className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-neutral-200/90 rounded-lg focus:outline-none focus:border-neutral-400 transition-colors shadow-2xs placeholder:text-neutral-400"
             />
             {searchQuery && (
@@ -376,9 +376,9 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
 
         {/* VIEW 1: Family Units (Minimalist Clean Cards) */}
         {activeTab === 'families' && (
-          <div className="space-y-4">
+          <div className="space-y-3.5 sm:space-y-4">
             {filteredFamilies.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-neutral-200/80 p-12 text-center space-y-3">
+              <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200/80 p-8 sm:p-12 text-center space-y-3">
                 <Users className="w-8 h-8 text-neutral-300 mx-auto" />
                 <p className="text-xs text-neutral-500">
                   {searchQuery
@@ -399,23 +399,23 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                 return (
                   <div
                     key={unit.id}
-                    className="bg-white rounded-2xl border border-neutral-200/80 p-5 sm:p-6 shadow-2xs hover:border-neutral-300 transition-colors space-y-5"
+                    className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200/80 p-3.5 sm:p-6 shadow-2xs hover:border-neutral-300 transition-colors space-y-4 sm:space-y-5"
                   >
                     {/* Family Card Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-neutral-100">
-                      <div>
-                        <h2 className="text-base font-semibold text-neutral-900 tracking-tight">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-neutral-100">
+                      <div className="min-w-0">
+                        <h2 className="text-sm sm:text-base font-semibold text-neutral-900 tracking-tight break-words">
                           {unit.title}
                         </h2>
                       </div>
 
-                      <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                      <div className="flex items-center gap-1.5 flex-wrap shrink-0">
                         {unit.parents.length > 0 && (
                           <button
                             onClick={() =>
                               onAddChildToFamily(unit.parents[0], unit.parents[1])
                             }
-                            className="px-2.5 py-1 text-xs font-medium text-neutral-700 hover:text-neutral-900 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/70 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1 text-xs font-medium text-neutral-700 hover:text-neutral-900 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/70 rounded-md transition-colors flex items-center gap-1 cursor-pointer shrink-0"
                           >
                             <Plus className="w-3 h-3 text-neutral-500" />
                             <span>Tambah Anak</span>
@@ -424,7 +424,7 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                         {unit.parents.length === 1 && (
                           <button
                             onClick={() => onAddSpouseToMember(unit.parents[0])}
-                            className="px-2.5 py-1 text-xs font-medium text-neutral-700 hover:text-neutral-900 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/70 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1 text-xs font-medium text-neutral-700 hover:text-neutral-900 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/70 rounded-md transition-colors flex items-center gap-1 cursor-pointer shrink-0"
                           >
                             <Plus className="w-3 h-3 text-neutral-500" />
                             <span>Tambah Pasangan</span>
@@ -439,7 +439,7 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                         Orang Tua
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3">
                         {unit.parents.map((parent) => {
                           const isMale = parent.gender === 'male';
                           const roleName = isMale ? 'Ayah' : 'Ibu';
@@ -447,11 +447,11 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                           return (
                             <div
                               key={parent.id}
-                              className="p-3.5 rounded-xl border border-neutral-200/70 bg-neutral-50/40 hover:bg-white hover:border-neutral-300 transition-colors flex items-start justify-between gap-3 group"
+                              className="p-3 sm:p-3.5 rounded-xl border border-neutral-200/70 bg-neutral-50/40 hover:bg-white hover:border-neutral-300 transition-colors flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-3 group"
                             >
-                              <div className="flex items-start gap-3 min-w-0">
+                              <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
                                 {/* Photo or Initials Avatar */}
-                                <div className="w-10 h-10 rounded-full bg-neutral-200/70 border border-neutral-200 flex items-center justify-center font-medium text-xs text-neutral-700 shrink-0 overflow-hidden">
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-neutral-200/70 border border-neutral-200 flex items-center justify-center font-medium text-xs text-neutral-700 shrink-0 overflow-hidden">
                                   {parent.photoUrl ? (
                                     <img
                                       src={parent.photoUrl}
@@ -463,49 +463,55 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                                   )}
                                 </div>
 
-                                <div className="min-w-0 space-y-0.5">
+                                <div className="min-w-0 flex-1 space-y-1">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-[11px] font-medium text-neutral-400">
+                                    <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-wide">
                                       {roleName}
                                     </span>
-                                    <span className="text-[10px] font-medium text-neutral-600 bg-neutral-200/60 px-1.5 py-0.5 rounded">
+                                    <span className="text-[10px] font-medium text-neutral-600 bg-neutral-200/60 px-1.5 py-0.5 rounded shrink-0">
                                       {isMale ? 'Laki-laki' : 'Perempuan'}
                                     </span>
                                     {parent.isDeceased && (
-                                      <span className="text-[10px] text-neutral-400 font-mono">
-                                        &bull; Wafat{' '}
-                                        {parent.deathYear ? `(${parent.deathYear})` : ''}
+                                      <span className="text-[10px] text-neutral-500 bg-neutral-200/50 px-1.5 py-0.5 rounded font-mono shrink-0">
+                                        Wafat {parent.deathYear ? `(${parent.deathYear})` : ''}
                                       </span>
                                     )}
                                   </div>
 
-                                  <h3 className="text-sm font-semibold text-neutral-900 truncate">
+                                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-900 break-words leading-snug">
                                     {parent.fullName}
                                   </h3>
 
-                                  <div className="text-xs text-neutral-500 flex items-center gap-2 flex-wrap">
+                                  {/* Clean Metadata Badges */}
+                                  <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-neutral-600 pt-0.5">
                                     {parent.birthYear && (
-                                      <span className="font-mono tabular-nums">
+                                      <span className="inline-flex items-center gap-1 font-mono tabular-nums text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded shrink-0">
+                                        <Calendar className="w-2.5 h-2.5 text-neutral-400" />
                                         Lahir {parent.birthYear}
                                       </span>
                                     )}
                                     {parent.birthPlace && (
-                                      <span>&bull; {parent.birthPlace}</span>
+                                      <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded break-words max-w-full">
+                                        <MapPin className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                                        <span className="truncate max-w-[140px] sm:max-w-none">{parent.birthPlace}</span>
+                                      </span>
                                     )}
                                     {parent.currentResidence && (
-                                      <span className="text-neutral-700 font-medium">
-                                        &bull; Domisili: {parent.currentResidence}
+                                      <span className="inline-flex items-center gap-1 text-neutral-800 bg-neutral-200/70 px-1.5 py-0.5 rounded font-medium break-words max-w-full">
+                                        <span className="text-neutral-500 font-normal">Domisili:</span>
+                                        <span className="truncate max-w-[150px] sm:max-w-none">{parent.currentResidence}</span>
                                       </span>
                                     )}
                                     {parent.occupation && (
-                                      <span className="text-neutral-500">
-                                        &bull; {parent.occupation}
+                                      <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded max-w-full">
+                                        <Briefcase className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                                        <span className="truncate max-w-[140px] sm:max-w-none">{parent.occupation}</span>
                                       </span>
                                     )}
                                   </div>
 
                                   {parent.notes && (
-                                    <p className="text-[11px] text-neutral-400 line-clamp-1 italic pt-0.5">
+                                    <p className="text-[11px] text-neutral-400 line-clamp-2 italic pt-0.5 break-words">
                                       {parent.notes}
                                     </p>
                                   )}
@@ -513,24 +519,24 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                               </div>
 
                               {/* Action Buttons */}
-                              <div className="flex items-center gap-0.5 shrink-0">
+                              <div className="flex items-center gap-0.5 shrink-0 self-end sm:self-start pt-1 sm:pt-0">
                                 <button
                                   onClick={() => onSelectMemberInTree(parent)}
-                                  className="p-1 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer"
+                                  className="p-1 sm:p-1.5 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer"
                                   title="Lihat di Pohon Silsilah"
                                 >
                                   <GitFork className="w-3.5 h-3.5 rotate-180" />
                                 </button>
                                 <button
                                   onClick={() => onOpenDetail(parent)}
-                                  className="p-1 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer"
+                                  className="p-1 sm:p-1.5 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer"
                                   title="Detail profil"
                                 >
                                   <User className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={() => onEditMember(parent)}
-                                  className="p-1 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer"
+                                  className="p-1 sm:p-1.5 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer"
                                   title="Edit"
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
@@ -544,7 +550,7 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
 
                     {/* Children Block: Vertical List Ordered by Birth */}
                     <div className="space-y-2 pt-1">
-                      <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wider text-neutral-400">
+                      <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wider text-neutral-400 flex-wrap gap-1">
                         <span>Anak ({unit.children.length}) &bull; Urutan Kelahiran</span>
                         {unit.children.length > 1 && (
                           <span className="normal-case text-neutral-400 font-normal">
@@ -569,12 +575,12 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                             return (
                               <div
                                 key={child.id}
-                                className="px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-neutral-50/70 transition-colors group"
+                                className="p-3 sm:px-3.5 sm:py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 hover:bg-neutral-50/70 transition-colors group"
                               >
                                 {/* Left: Sequence Number & Profile */}
-                                <div className="flex items-center gap-3 min-w-0">
+                                <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                                   {/* Minimalist Index & Up/Down Reorder */}
-                                  <div className="flex items-center gap-1 shrink-0">
+                                  <div className="flex items-center gap-1 shrink-0 pt-0.5 sm:pt-0">
                                     <span className="w-5 h-5 rounded-md bg-neutral-100 text-neutral-700 font-mono text-[11px] font-semibold flex items-center justify-center">
                                       {idx + 1}
                                     </span>
@@ -629,40 +635,53 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                                   </div>
 
                                   {/* Child Info */}
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 flex-1 space-y-1">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="text-xs sm:text-sm font-medium text-neutral-900 truncate">
+                                      <span className="text-xs sm:text-sm font-semibold text-neutral-900 break-words sm:truncate">
                                         {child.fullName}
                                       </span>
-                                      <span className="text-[10px] font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded">
+                                      <span className="text-[10px] font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded shrink-0">
                                         {child.gender === 'male' ? 'Laki-laki' : 'Perempuan'}
                                       </span>
                                       {child.isDeceased && (
-                                        <span className="text-[10px] text-neutral-400 font-mono">
-                                          &bull; Wafat{' '}
-                                          {child.deathYear ? `(${child.deathYear})` : ''}
+                                        <span className="text-[10px] text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded font-mono shrink-0">
+                                          Wafat {child.deathYear ? `(${child.deathYear})` : ''}
                                         </span>
                                       )}
                                     </div>
 
-                                    <div className="text-[11px] text-neutral-500 flex items-center gap-2 flex-wrap">
-                                      <span className="font-mono tabular-nums">
-                                        {child.birthYear ? `Lahir ${child.birthYear}` : '-'}
-                                      </span>
+                                    {/* Neat Badges for Child Metadata */}
+                                    <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-neutral-600">
+                                      {child.birthYear && (
+                                        <span className="inline-flex items-center gap-1 font-mono tabular-nums text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded shrink-0">
+                                          <Calendar className="w-2.5 h-2.5 text-neutral-400" />
+                                          Lahir {child.birthYear}
+                                        </span>
+                                      )}
                                       {child.birthPlace && (
-                                        <span>&bull; {child.birthPlace}</span>
+                                        <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded break-words max-w-full">
+                                          <MapPin className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                                          <span className="truncate max-w-[130px] sm:max-w-none">{child.birthPlace}</span>
+                                        </span>
                                       )}
                                       {child.currentResidence && (
-                                        <span className="text-neutral-700 font-medium">
-                                          &bull; Domisili: {child.currentResidence}
+                                        <span className="inline-flex items-center gap-1 text-neutral-800 bg-neutral-200/70 px-1.5 py-0.5 rounded font-medium break-words max-w-full">
+                                          <span className="text-neutral-500 font-normal">Domisili:</span>
+                                          <span className="truncate max-w-[140px] sm:max-w-none">{child.currentResidence}</span>
                                         </span>
                                       )}
                                       {child.occupation && (
-                                        <span>&bull; {child.occupation}</span>
+                                        <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded max-w-full">
+                                          <Briefcase className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                                          <span className="truncate max-w-[130px] sm:max-w-none">{child.occupation}</span>
+                                        </span>
                                       )}
                                       {spouses.length > 0 && (
-                                        <span className="text-neutral-600 font-medium">
-                                          &bull; Menikah dg {spouses.map((s) => s.fullName).join(', ')}
+                                        <span className="inline-flex items-center gap-1 text-neutral-700 bg-amber-50/80 border border-amber-200/60 px-1.5 py-0.5 rounded break-words max-w-full">
+                                          <Heart className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                                          <span className="truncate max-w-[150px] sm:max-w-none">
+                                            {spouses.map((s) => s.fullName).join(', ')}
+                                          </span>
                                         </span>
                                       )}
                                     </div>
@@ -670,7 +689,7 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                                 </div>
 
                                 {/* Right: Clean Minimalist Actions */}
-                                <div className="flex items-center gap-1 shrink-0">
+                                <div className="flex items-center gap-1 shrink-0 self-end sm:self-center pt-1 sm:pt-0">
                                   <button
                                     onClick={() => onSelectMemberInTree(child)}
                                     className="px-2 py-1 text-[11px] font-medium text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
@@ -681,21 +700,21 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                                   </button>
                                   <button
                                     onClick={() => onOpenDetail(child)}
-                                    className="p-1 text-neutral-400 hover:text-neutral-700 rounded-md transition-colors cursor-pointer"
+                                    className="p-1 sm:p-1.5 text-neutral-400 hover:text-neutral-700 rounded-md transition-colors cursor-pointer"
                                     title="Detail"
                                   >
                                     <User className="w-3.5 h-3.5" />
                                   </button>
                                   <button
                                     onClick={() => onEditMember(child)}
-                                    className="p-1 text-neutral-400 hover:text-neutral-700 rounded-md transition-colors cursor-pointer"
+                                    className="p-1 sm:p-1.5 text-neutral-400 hover:text-neutral-700 rounded-md transition-colors cursor-pointer"
                                     title="Edit"
                                   >
                                     <Pencil className="w-3.5 h-3.5" />
                                   </button>
                                   <button
                                     onClick={() => onDeleteMember(child)}
-                                    className="p-1 text-neutral-400 hover:text-red-600 rounded-md transition-colors cursor-pointer"
+                                    className="p-1 sm:p-1.5 text-neutral-400 hover:text-red-600 rounded-md transition-colors cursor-pointer"
                                     title="Hapus"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -716,7 +735,7 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
 
         {/* VIEW 2: Complete Members Directory (Table / List) */}
         {activeTab === 'all' && (
-          <div className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs">
+          <div className="bg-white rounded-xl sm:rounded-2xl border border-neutral-200/80 overflow-hidden shadow-2xs">
             <div className="divide-y divide-neutral-100">
               {filteredDirectory.length === 0 ? (
                 <div className="p-8 text-center text-xs text-neutral-400">
@@ -734,9 +753,9 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                   return (
                     <div
                       key={m.id}
-                      className="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-neutral-50/70 transition-colors"
+                      className="p-3 sm:px-4 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 hover:bg-neutral-50/70 transition-colors"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                         <div className="w-9 h-9 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-xs font-medium text-neutral-700 shrink-0 overflow-hidden">
                           {m.photoUrl ? (
                             <img
@@ -749,40 +768,60 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                           )}
                         </div>
 
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <h4 className="text-xs sm:text-sm font-medium text-neutral-900 truncate">
+                            <h4 className="text-xs sm:text-sm font-semibold text-neutral-900 break-words sm:truncate">
                               {m.fullName}
                             </h4>
-                            <span className="text-[10px] font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded shrink-0">
                               {m.gender === 'male' ? 'Laki-laki' : 'Perempuan'}
                             </span>
                             {m.isDeceased && (
-                              <span className="text-[10px] text-neutral-400 font-mono">
+                              <span className="text-[10px] text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded font-mono shrink-0">
                                 Wafat {m.deathYear ? `(${m.deathYear})` : ''}
                               </span>
                             )}
                           </div>
 
-                          <div className="text-[11px] text-neutral-500 flex items-center gap-2 flex-wrap">
-                            <span className="font-mono tabular-nums">
-                              {m.birthYear ? `Lahir ${m.birthYear}` : '-'}
-                            </span>
-                            {m.birthPlace && <span>&bull; {m.birthPlace}</span>}
-                            {m.currentResidence && (
-                              <span className="text-neutral-700 font-medium">
-                                &bull; Domisili: {m.currentResidence}
+                          <div className="flex items-center gap-1.5 flex-wrap text-[10px] sm:text-[11px] text-neutral-600">
+                            {m.birthYear && (
+                              <span className="inline-flex items-center gap-1 font-mono tabular-nums text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded shrink-0">
+                                <Calendar className="w-2.5 h-2.5 text-neutral-400" />
+                                Lahir {m.birthYear}
                               </span>
                             )}
-                            {m.occupation && <span>&bull; {m.occupation}</span>}
+                            {m.birthPlace && (
+                              <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded break-words max-w-full">
+                                <MapPin className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                                <span className="truncate max-w-[130px] sm:max-w-none">{m.birthPlace}</span>
+                              </span>
+                            )}
+                            {m.currentResidence && (
+                              <span className="inline-flex items-center gap-1 text-neutral-800 bg-neutral-200/70 px-1.5 py-0.5 rounded font-medium break-words max-w-full">
+                                <span className="text-neutral-500 font-normal">Domisili:</span>
+                                <span className="truncate max-w-[140px] sm:max-w-none">{m.currentResidence}</span>
+                              </span>
+                            )}
+                            {m.occupation && (
+                              <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded max-w-full">
+                                <Briefcase className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                                <span className="truncate max-w-[130px] sm:max-w-none">{m.occupation}</span>
+                              </span>
+                            )}
                             {parents.length > 0 && (
-                              <span>
-                                &bull; Orang tua: {parents.map((p) => p.fullName).join(' & ')}
+                              <span className="inline-flex items-center gap-1 text-neutral-600 bg-neutral-100/90 px-1.5 py-0.5 rounded max-w-full">
+                                <Users className="w-2.5 h-2.5 text-neutral-400 shrink-0" />
+                                <span className="truncate max-w-[160px] sm:max-w-none">
+                                  {parents.map((p) => p.fullName).join(' & ')}
+                                </span>
                               </span>
                             )}
                             {spouses.length > 0 && (
-                              <span className="text-neutral-700">
-                                &bull; Pasangan: {spouses.map((s) => s.fullName).join(', ')}
+                              <span className="inline-flex items-center gap-1 text-neutral-700 bg-amber-50/80 border border-amber-200/60 px-1.5 py-0.5 rounded max-w-full">
+                                <Heart className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                                <span className="truncate max-w-[150px] sm:max-w-none">
+                                  {spouses.map((s) => s.fullName).join(', ')}
+                                </span>
                               </span>
                             )}
                           </div>
@@ -790,7 +829,7 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                      <div className="flex items-center gap-1 shrink-0 self-end sm:self-center pt-1 sm:pt-0">
                         <button
                           onClick={() => onSelectMemberInTree(m)}
                           className="px-2.5 py-1 text-xs font-medium text-neutral-700 hover:text-neutral-900 bg-neutral-100 hover:bg-neutral-200/80 rounded-md transition-colors flex items-center gap-1 cursor-pointer"
@@ -800,21 +839,21 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                         </button>
                         <button
                           onClick={() => onOpenDetail(m)}
-                          className="p-1 text-neutral-400 hover:text-neutral-700 rounded-md transition-colors cursor-pointer"
+                          className="p-1 sm:p-1.5 text-neutral-400 hover:text-neutral-700 rounded-md transition-colors cursor-pointer"
                           title="Detail"
                         >
                           <User className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => onEditMember(m)}
-                          className="p-1 text-neutral-400 hover:text-neutral-700 rounded-md transition-colors cursor-pointer"
+                          className="p-1 sm:p-1.5 text-neutral-400 hover:text-neutral-700 rounded-md transition-colors cursor-pointer"
                           title="Edit"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => onDeleteMember(m)}
-                          className="p-1 text-neutral-400 hover:text-red-600 rounded-md transition-colors cursor-pointer"
+                          className="p-1 sm:p-1.5 text-neutral-400 hover:text-red-600 rounded-md transition-colors cursor-pointer"
                           title="Hapus"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
