@@ -321,8 +321,13 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         zoomOnPinch={true}
         zoomOnScroll={true}
         zoomOnDoubleClick={false}
+        edgesFocusable={false}
+        edgesReconnectable={false}
         defaultEdgeOptions={{
           type: 'smoothstep',
+          focusable: false,
+          deletable: false,
+          selectable: false,
         }}
         proOptions={{ hideAttribution: true }}
         className="touch-none select-none"

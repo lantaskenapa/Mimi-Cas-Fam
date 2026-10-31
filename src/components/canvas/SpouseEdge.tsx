@@ -98,6 +98,7 @@ export const SpouseEdge: React.FC<EdgeProps> = ({
             strokeWidth: isHighlighted ? 2.5 : isDimmed ? 1.2 : 1.25,
             opacity: isDimmed ? 0.22 : 1,
             strokeLinecap: 'round',
+            pointerEvents: 'none',
             ...style,
           }}
           markerEnd={markerEnd}
@@ -110,10 +111,10 @@ export const SpouseEdge: React.FC<EdgeProps> = ({
         height={26}
         x={midX - 13}
         y={midY - 13}
-        className="pointer-events-none select-none overflow-visible"
+        className="pointer-events-none select-none touch-none overflow-visible"
       >
         <div
-          className={`w-[26px] h-[26px] rounded-full bg-white border flex items-center justify-center transition-all ${
+          className={`w-[26px] h-[26px] rounded-full bg-white border flex items-center justify-center pointer-events-none select-none touch-none transition-all ${
             isHighlighted
               ? 'border-neutral-900 shadow-md ring-2 ring-neutral-900/15 text-rose-600 scale-105 opacity-100'
               : isDimmed
@@ -122,7 +123,7 @@ export const SpouseEdge: React.FC<EdgeProps> = ({
           }`}
         >
           <Heart
-            className={`w-3.5 h-3.5 ${
+            className={`w-3.5 h-3.5 pointer-events-none select-none touch-none ${
               isHighlighted
                 ? 'fill-rose-600 stroke-rose-700'
                 : isDimmed

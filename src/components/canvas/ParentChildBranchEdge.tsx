@@ -214,6 +214,7 @@ export const ParentChildBranchEdge: React.FC<EdgeProps> = ({
           strokeLinecap: 'square',
           strokeLinejoin: 'miter',
           opacity: isDimmed ? 0.22 : 1,
+          pointerEvents: 'none',
           ...style,
         }}
         markerEnd={markerEnd}
@@ -226,7 +227,7 @@ export const ParentChildBranchEdge: React.FC<EdgeProps> = ({
           r={isHighlighted ? 3.5 : 3}
           fill={isHighlighted ? '#0f172a' : isDimmed ? '#cbd5e1' : '#64748b'}
           opacity={isDimmed ? 0.22 : 1}
-          className="pointer-events-none select-none transition-all"
+          className="pointer-events-none select-none touch-none transition-all"
         />
       )}
     </>
