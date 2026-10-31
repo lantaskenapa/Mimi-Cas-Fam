@@ -497,7 +497,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col w-screen h-screen overflow-hidden bg-neutral-50 text-neutral-900">
+    <div className="flex flex-col w-full h-screen h-dvh max-h-dvh overflow-hidden bg-neutral-50 text-neutral-900">
       {/* Top Navigation */}
       <TopNavigation
         treeTitle={dataset.meta.title}
@@ -519,7 +519,7 @@ export default function App() {
       />
 
       {/* Main Area: Tree Canvas or Fam Book */}
-      <main className="flex-1 relative w-full h-[calc(100vh-3.5rem)] overflow-hidden">
+      <main className="flex-1 relative w-full h-full min-h-0 overflow-hidden">
         {activeView === 'tree' ? (
           <FamilyTreeCanvas
             members={dataset.members}

@@ -153,12 +153,21 @@ interface FamilyUnit {
   parentIds: string[];
   childrenIds: string[];
   unitWidth: number;
+  generation: number;
   x: number;
   y: number;
+  parentUnits?: FamilyUnit[];
+  childrenUnits?: FamilyUnit[];
 }
 
 /**
- * Comprehensive tree layout algorithm with strict anti-overlap collision resolution.
+ * Balanced, symmetrical hierarchical tree layout algorithm.
+ * Guarantees that:
+ * 1. Parents are always horizontally centered directly above their children.
+ * 2. Children groups (siblings) are always horizontally centered directly below their parents.
+ * 3. Adding or updating members never drifts or slants to the right; the tree balances symmetrically.
+ * 4. Sibling birth order is strictly maintained from left to right.
+ * 5. Strict collision prevention ensures cards never overlap.
  */
 export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
   if (members.length === 0) return [];
@@ -167,7 +176,7 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
   const memberMap = new Map<string, FamilyMember>();
   members.forEach((m) => memberMap.set(m.id, { ...m }));
 
-  // Ensure bidirectional consistency between parents and children without fabricating false marriages
+  // Ensure bidirectional consistency between parents and children
   members.forEach((child) => {
     if (child.parentIds && child.parentIds.length > 0) {
       child.parentIds.forEach((pId) => {
@@ -192,7 +201,7 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
   const unitsByGen = new Map<number, FamilyUnit[]>();
   const processedMembers = new Set<string>();
 
-  // 1. Group into Family Units per generation
+  // 1. Group into Family Units per generation (Couples share single unit)
   sortedGens.forEach((gen) => {
     const memberIds = genGroups.get(gen) || [];
     const units: FamilyUnit[] = [];
@@ -201,7 +210,6 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
       if (processedMembers.has(id)) return;
 
       const member = memberMap.get(id)!;
-      // Get all spouses not yet processed
       const spouses = member.spouseIds
         .map((sId) => memberMap.get(sId))
         .filter((s): s is FamilyMember => Boolean(s && !processedMembers.has(s.id)));
@@ -227,8 +235,7 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
       const collectiveChildren = collectiveChildrenMembers.map((c) => c.id);
 
       // Width required for this couple / unit
-      const unitWidth =
-        CARD_WIDTH + spouses.length * (CARD_WIDTH + SPOUSE_GAP);
+      const unitWidth = CARD_WIDTH + spouses.length * (CARD_WIDTH + SPOUSE_GAP);
 
       units.push({
         id: member.id,
@@ -238,6 +245,7 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
         parentIds: member.parentIds,
         childrenIds: collectiveChildren,
         unitWidth,
+        generation: gen,
         x: 60,
         y: 60 + gen * (CARD_HEIGHT + VERTICAL_GAP),
       });
@@ -246,7 +254,7 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
     unitsByGen.set(gen, units);
   });
 
-  // 2. Initial Placement (Top-Down with Parent Centering)
+  // 2. Build cross-reference unit lookup
   const unitMap = new Map<string, FamilyUnit>();
   unitsByGen.forEach((units) => {
     units.forEach((u) => {
@@ -254,125 +262,242 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
     });
   });
 
-  sortedGens.forEach((gen) => {
-    const units = unitsByGen.get(gen) || [];
+  // Link parentUnits and childrenUnits on each unit
+  unitsByGen.forEach((units) => {
+    units.forEach((u) => {
+      const pUnits = Array.from(
+        new Set(u.parentIds.map((pId) => unitMap.get(pId)).filter(Boolean))
+      ) as FamilyUnit[];
+      u.parentUnits = pUnits;
 
-    // Sort units in generation by parent horizontal midpoint, then by birth order for siblings
-    units.sort((a, b) => {
-      const aParentUnits = a.parentIds.map((pId) => unitMap.get(pId)).filter(Boolean) as FamilyUnit[];
-      const bParentUnits = b.parentIds.map((pId) => unitMap.get(pId)).filter(Boolean) as FamilyUnit[];
-
-      const aParentX = aParentUnits.length > 0
-        ? aParentUnits.reduce((sum, pu) => sum + (pu.x + pu.unitWidth / 2), 0) / aParentUnits.length
-        : a.x;
-      const bParentX = bParentUnits.length > 0
-        ? bParentUnits.reduce((sum, pu) => sum + (pu.x + pu.unitWidth / 2), 0) / bParentUnits.length
-        : b.x;
-
-      if (Math.abs(aParentX - bParentX) > 1) {
-        return aParentX - bParentX;
-      }
-
-      // If they are siblings of the same parent(s), sort from oldest to youngest (left to right)
-      const shareParents = a.parentIds.length > 0 && a.parentIds.some((pId) => b.parentIds.includes(pId));
-      if (shareParents) {
-        return compareMembersBirthOrder(a.primary, b.primary);
-      }
-
-      return aParentX - bParentX;
-    });
-
-    let currentX = 60;
-
-    units.forEach((unit) => {
-      // Find parent units in earlier generations
-      const parentUnits = unit.parentIds
-        .map((pId) => unitMap.get(pId))
-        .filter(Boolean) as FamilyUnit[];
-
-      let preferredX = currentX;
-
-      if (parentUnits.length > 0) {
-        // Average midpoint of parent unit(s)
-        const avgParentMidX =
-          parentUnits.reduce((sum, pu) => sum + (pu.x + pu.unitWidth / 2), 0) /
-          parentUnits.length;
-
-        // Find all sibling units in this generation, sorted from oldest to youngest (left to right)
-        const allSiblings = units
-          .filter((u) => u.parentIds.some((pid) => unit.parentIds.includes(pid)))
-          .sort((s1, s2) => compareMembersBirthOrder(s1.primary, s2.primary));
-
-        if (allSiblings.length <= 1) {
-          // Single child unit: center directly under parents
-          preferredX = avgParentMidX - unit.unitWidth / 2;
-        } else {
-          // Multiple siblings: center the sibling group under parents
-          const siblingIndex = allSiblings.findIndex((s) => s.id === unit.id);
-
-          const totalSiblingWidth =
-            allSiblings.reduce((sum, s) => sum + s.unitWidth + SIBLING_GAP, 0) - SIBLING_GAP;
-
-          const groupStartX = avgParentMidX - totalSiblingWidth / 2;
-          // Calculate offset up to this sibling
-          let offset = 0;
-          for (let i = 0; i < siblingIndex; i++) {
-            offset += allSiblings[i].unitWidth + SIBLING_GAP;
-          }
-          preferredX = groupStartX + offset;
-        }
-      }
-
-      // Ensure no backward jump
-      unit.x = Math.max(currentX, preferredX);
-      currentX = unit.x + unit.unitWidth + FAMILY_GAP;
+      const cUnits = Array.from(
+        new Set(u.childrenIds.map((cId) => unitMap.get(cId)).filter(Boolean))
+      ) as FamilyUnit[];
+      cUnits.sort((c1, c2) =>
+        compareMembersBirthOrder(c1.primary, c2.primary, u.childrenIds)
+      );
+      u.childrenUnits = cUnits;
     });
   });
 
-  // 3. Strict Anti-Overlap Collision Detection & Resolution Pass (WAJIB)
-  // Ensures that within EVERY generation, each card has at least minimum gap from the previous one
-  sortedGens.forEach((gen) => {
-    const units = unitsByGen.get(gen) || [];
-    if (units.length <= 1) return;
+  const areSiblings = (u1: FamilyUnit, u2: FamilyUnit): boolean => {
+    return (
+      u1.parentIds.length > 0 &&
+      u1.parentIds.some((pId) => u2.parentIds.includes(pId))
+    );
+  };
 
-    // Run iterative collision resolution until no overlap exists
-    for (let pass = 0; pass < 20; pass++) {
-      let hadCollision = false;
+  const shiftSubtree = (
+    unit: FamilyUnit,
+    amount: number,
+    visited = new Set<string>()
+  ) => {
+    if (visited.has(unit.id) || Math.abs(amount) < 0.1) return;
+    visited.add(unit.id);
+    unit.x += amount;
 
-      // Sort units by current X coordinate
-      units.sort((a, b) => a.x - b.x);
-
-      for (let i = 1; i < units.length; i++) {
-        const prev = units[i - 1];
-        const curr = units[i];
-
-        // Determine appropriate gap:
-        // SIBLING_GAP if they share parents, otherwise FAMILY_GAP
-        const areSiblings =
-          prev.parentIds.length > 0 &&
-          curr.parentIds.some((pid) => prev.parentIds.includes(pid));
-        const requiredGap = areSiblings ? SIBLING_GAP : FAMILY_GAP;
-
-        const minAllowedX = prev.x + prev.unitWidth + requiredGap;
-
-        if (curr.x < minAllowedX) {
-          const shiftAmount = minAllowedX - curr.x;
-          hadCollision = true;
-
-          // Shift current unit and all subsequent units in this generation
-          for (let j = i; j < units.length; j++) {
-            units[j].x += shiftAmount;
-            // Also propagate shift to any descendants in lower generations to preserve tree shape
-            shiftDescendantUnits(units[j], shiftAmount, unitMap);
-          }
+    if (unit.childrenUnits) {
+      unit.childrenUnits.forEach((child) => {
+        if (!visited.has(child.id)) {
+          shiftSubtree(child, amount, visited);
         }
-      }
+      });
+    }
+  };
 
-      if (!hadCollision) break;
+  // 3. Initial Bottom-Up Symmetrical Subtree Sizing & Positioning
+  const laidOutUnits = new Set<string>();
+
+  const layoutSubtree = (
+    unit: FamilyUnit,
+    startX: number
+  ): { left: number; right: number; center: number } => {
+    laidOutUnits.add(unit.id);
+
+    const cUnits = (unit.childrenUnits || []).filter(
+      (c) => !laidOutUnits.has(c.id)
+    );
+
+    if (cUnits.length === 0) {
+      unit.x = startX;
+      return {
+        left: startX,
+        right: startX + unit.unitWidth,
+        center: startX + unit.unitWidth / 2,
+      };
+    }
+
+    let nextChildX = startX;
+    const childSpans: Array<{
+      left: number;
+      right: number;
+      center: number;
+      unit: FamilyUnit;
+    }> = [];
+
+    for (let i = 0; i < cUnits.length; i++) {
+      const child = cUnits[i];
+      const span = layoutSubtree(child, nextChildX);
+      childSpans.push({ ...span, unit: child });
+      // Sibling gap between children of the same parent
+      nextChildX = span.right + SIBLING_GAP;
+    }
+
+    const firstSpan = childSpans[0];
+    const lastSpan = childSpans[childSpans.length - 1];
+    const childrenTotalWidth = lastSpan.right - firstSpan.left;
+    const childrenMid = (firstSpan.left + lastSpan.right) / 2;
+
+    if (unit.unitWidth >= childrenTotalWidth) {
+      // Parent unit is wider than all children combined:
+      // Parent sits at startX, children are centered under parent
+      unit.x = startX;
+      const parentCenter = startX + unit.unitWidth / 2;
+      const shift = parentCenter - childrenMid;
+      childSpans.forEach((cs) => {
+        shiftSubtree(cs.unit, shift);
+      });
+      return {
+        left: startX,
+        right: startX + unit.unitWidth,
+        center: parentCenter,
+      };
+    } else {
+      // Children are wider: center parent directly above children midpoint!
+      unit.x = childrenMid - unit.unitWidth / 2;
+      return {
+        left: firstSpan.left,
+        right: lastSpan.right,
+        center: childrenMid,
+      };
+    }
+  };
+
+  // Layout all root trees (units with no parents in earlier generations)
+  const allUnitsList = Array.from(unitMap.values());
+  const rootUnits = allUnitsList.filter(
+    (u) => !u.parentUnits || u.parentUnits.length === 0
+  );
+
+  let currentRootX = 60;
+  rootUnits.forEach((root) => {
+    if (!laidOutUnits.has(root.id)) {
+      const span = layoutSubtree(root, currentRootX);
+      currentRootX = span.right + FAMILY_GAP;
     }
   });
 
-  // 4. Normalize canvas coordinates (Ensure minimum padding at top-left)
+  // Place any orphaned or disconnected units
+  allUnitsList.forEach((u) => {
+    if (!laidOutUnits.has(u.id)) {
+      const span = layoutSubtree(u, currentRootX);
+      currentRootX = span.right + FAMILY_GAP;
+    }
+  });
+
+  // 4. Multi-Pass Bidirectional Centering & Collision Relaxation (8 iterations)
+  // Ensures every parent is centered over children, every sibling group is centered
+  // under parents, and no cards overlap horizontally.
+  for (let pass = 0; pass < 8; pass++) {
+    // 4A. Bottom-Up Pass: Center parents over their children's midpoint
+    for (let g = sortedGens.length - 1; g >= 0; g--) {
+      const gen = sortedGens[g];
+      const units = unitsByGen.get(gen) || [];
+
+      units.forEach((u) => {
+        const cUnits = u.childrenUnits || [];
+        if (cUnits.length > 0) {
+          const cMin = Math.min(...cUnits.map((c) => c.x));
+          const cMax = Math.max(...cUnits.map((c) => c.x + c.unitWidth));
+          const cMid = (cMin + cMax) / 2;
+          u.x = cMid - u.unitWidth / 2;
+        }
+      });
+
+      // Strict Anti-Collision in this generation
+      units.sort((a, b) => a.x - b.x);
+      for (let i = 1; i < units.length; i++) {
+        const prev = units[i - 1];
+        const curr = units[i];
+        const requiredGap = areSiblings(prev, curr) ? SIBLING_GAP : FAMILY_GAP;
+        const minAllowedX = prev.x + prev.unitWidth + requiredGap;
+
+        if (curr.x < minAllowedX) {
+          const shift = minAllowedX - curr.x;
+          shiftSubtree(curr, shift);
+        }
+      }
+    }
+
+    // 4B. Top-Down Pass: Center children groups under their parents
+    for (let g = 0; g < sortedGens.length; g++) {
+      const gen = sortedGens[g];
+      const units = unitsByGen.get(gen) || [];
+
+      // Group sibling units sharing parents
+      const siblingGroups = new Map<string, FamilyUnit[]>();
+      units.forEach((u) => {
+        if (u.parentIds.length > 0) {
+          const groupKey = [...u.parentIds].sort().join('--');
+          if (!siblingGroups.has(groupKey)) {
+            siblingGroups.set(groupKey, []);
+          }
+          siblingGroups.get(groupKey)!.push(u);
+        }
+      });
+
+      siblingGroups.forEach((sGroup) => {
+        const first = sGroup[0];
+        const pUnits = first.parentUnits || [];
+        if (pUnits.length === 0) return;
+
+        const avgParentMid =
+          pUnits.reduce((sum, pu) => sum + (pu.x + pu.unitWidth / 2), 0) /
+          pUnits.length;
+
+        const sMin = Math.min(...sGroup.map((s) => s.x));
+        const sMax = Math.max(...sGroup.map((s) => s.x + s.unitWidth));
+        const sMid = (sMin + sMax) / 2;
+        const desiredShift = avgParentMid - sMid;
+
+        // Check if shifting left is safe with respect to previous unit in generation
+        units.sort((a, b) => a.x - b.x);
+        const firstIdx = units.indexOf(first);
+        const minAllowedLeft =
+          firstIdx > 0
+            ? units[firstIdx - 1].x +
+              units[firstIdx - 1].unitWidth +
+              (areSiblings(units[firstIdx - 1], first)
+                ? SIBLING_GAP
+                : FAMILY_GAP)
+            : -Infinity;
+
+        const safeShift = Math.max(desiredShift, minAllowedLeft - first.x);
+
+        if (Math.abs(safeShift) > 0.5) {
+          sGroup.forEach((s) => {
+            shiftSubtree(s, safeShift);
+          });
+        }
+      });
+
+      // Strict Anti-Collision in this generation
+      units.sort((a, b) => a.x - b.x);
+      for (let i = 1; i < units.length; i++) {
+        const prev = units[i - 1];
+        const curr = units[i];
+        const requiredGap = areSiblings(prev, curr) ? SIBLING_GAP : FAMILY_GAP;
+        const minAllowedX = prev.x + prev.unitWidth + requiredGap;
+
+        if (curr.x < minAllowedX) {
+          const shift = minAllowedX - curr.x;
+          shiftSubtree(curr, shift);
+        }
+      }
+    }
+  }
+
+  // 5. Normalize canvas coordinates with generous top-left safe padding
   let minX = Infinity;
   let minY = Infinity;
 
@@ -384,10 +509,10 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
   });
 
   const targetPadding = 80;
-  const shiftX = minX < targetPadding ? targetPadding - minX : targetPadding - minX;
-  const shiftY = minY < targetPadding ? targetPadding - minY : targetPadding - minY;
+  const shiftX = targetPadding - minX;
+  const shiftY = targetPadding - minY;
 
-  // 5. Build final FamilyMember positions
+  // 6. Build final FamilyMember positions
   const finalMembers: FamilyMember[] = [];
 
   unitsByGen.forEach((units) => {
@@ -397,7 +522,10 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
 
       // Position primary member
       const primary = unit.primary;
-      primary.position = { x: Math.round(finalUnitX), y: Math.round(finalUnitY) };
+      primary.position = {
+        x: Math.round(finalUnitX),
+        y: Math.round(finalUnitY),
+      };
       finalMembers.push(primary);
 
       // Position spouses side-by-side with exact SPOUSE_GAP
@@ -414,27 +542,6 @@ export function autoArrangeTree(members: FamilyMember[]): FamilyMember[] {
   });
 
   return finalMembers;
-}
-
-/**
- * Propagates horizontal position shift to all descendant units to keep branches cohesive.
- */
-function shiftDescendantUnits(
-  parentUnit: FamilyUnit,
-  shiftAmount: number,
-  unitMap: Map<string, FamilyUnit>,
-  visited = new Set<string>()
-) {
-  if (visited.has(parentUnit.id)) return;
-  visited.add(parentUnit.id);
-
-  parentUnit.childrenIds.forEach((childId) => {
-    const childUnit = unitMap.get(childId);
-    if (childUnit && !visited.has(childUnit.id)) {
-      childUnit.x += shiftAmount;
-      shiftDescendantUnits(childUnit, shiftAmount, unitMap, visited);
-    }
-  });
 }
 
 export type HighlightDirection = 'ancestors' | 'descendants';

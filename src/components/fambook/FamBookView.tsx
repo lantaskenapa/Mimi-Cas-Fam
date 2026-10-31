@@ -306,8 +306,8 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
   };
 
   return (
-    <div className="flex-1 w-full h-[calc(100vh-3.5rem)] overflow-y-auto overflow-x-hidden bg-neutral-50/70 text-neutral-900 select-text">
-      <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
+    <div className="w-full h-full min-h-0 overflow-y-auto overflow-x-hidden bg-neutral-50/70 text-neutral-900 select-text overscroll-contain">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-4 pb-36 sm:pb-20 space-y-4 sm:space-y-6">
         {/* Minimalist Top Header (Linear / Notion style) */}
         <div className="pb-3 sm:pb-4 border-b border-neutral-200/70">
           <div className="flex items-center gap-2 flex-wrap">

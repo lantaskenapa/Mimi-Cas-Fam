@@ -96,6 +96,8 @@ export const MemberModal: React.FC<MemberModalProps> = ({
           // Add target parent and any spouse of target as parents
           const parents = [target.id, ...target.spouseIds];
           setSelectedParentIds(parents);
+          const currentChildrenCount = target.childrenIds ? target.childrenIds.length : 0;
+          setBirthOrder(String(currentChildrenCount + 1));
         } else if (relationContext.type === 'parent') {
           const existingParentIds = target.parentIds || [];
           if (existingParentIds.length > 0) {
@@ -113,6 +115,9 @@ export const MemberModal: React.FC<MemberModalProps> = ({
           setGender(target.gender === 'male' ? 'female' : 'male');
           setRelationRole('');
           setSelectedParentIds(target.parentIds || []);
+          if (target.birthOrder) {
+            setBirthOrder(String(target.birthOrder + 1));
+          }
         }
       } else {
         setGender('male');
