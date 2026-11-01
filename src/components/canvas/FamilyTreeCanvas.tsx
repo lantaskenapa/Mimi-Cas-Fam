@@ -18,7 +18,7 @@ import { SpouseEdge } from './SpouseEdge';
 import { ParentChildBranchEdge } from './ParentChildBranchEdge';
 import { CanvasControls } from './CanvasControls';
 import { CreditsNode } from './CreditsNode';
-import { toPng } from 'html-to-image';
+import { toBlob } from 'html-to-image';
 import { X } from 'lucide-react';
 
 interface FamilyTreeCanvasProps {
@@ -125,7 +125,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
       const centerX = (minX + maxX) / 2;
       // Center the credit banner horizontally below the lowest members
       creditsX = Math.max(30, centerX - 230);
-      creditsY = maxY + 320;
+      creditsY = maxY + 90;
     }
 
     const creditsNode = {
@@ -252,7 +252,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
     setZoomLevel(viewport.zoom);
   }, []);
 
-  // Handle Export to PNG
+  // Handle Export to PNG covering the entire workspace of all members
   useEffect(() => {
     if (exportTrigger === 0) return;
 
@@ -269,21 +269,113 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
           return;
         }
 
-        // Fit view temporarily or capture
-        const dataUrl = await toPng(viewportElement, {
+        if (!members || members.length === 0) {
+          onToast?.('Pohon keluarga masih kosong, tidak ada data untuk diekspor.');
+          onExportComplete();
+          return;
+        }
+
+        // Brief delay to allow React to clear any active card selection and popups
+        await new Promise((resolve) => setTimeout(resolve, 80));
+
+        // 1. Calculate the full bounding box across ALL members and credits watermark
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        const CARD_WIDTH = 150;
+        const CARD_HEIGHT = 165;
+
+        for (const m of members) {
+          const x = m.position.x;
+          const y = m.position.y;
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x + CARD_WIDTH > maxX) maxX = x + CARD_WIDTH;
+          if (y + CARD_HEIGHT > maxY) maxY = y + CARD_HEIGHT;
+        }
+
+        // Include the credits watermark in bounding calculation
+        const centerX = (minX + maxX) / 2;
+        const credX = Math.max(30, centerX - 230);
+        const credY = maxY + 90;
+        const credW = 460;
+        const credH = 50;
+
+        if (credX < minX) minX = credX;
+        if (credX + credW > maxX) maxX = credX + credW;
+        if (credY + credH > maxY) maxY = credY + credH;
+
+        // Generous padding around the entire canvas export
+        const padding = 60;
+        const boundsWidth = Math.max(300, maxX - minX);
+        const boundsHeight = Math.max(200, maxY - minY);
+
+        const imageWidth = Math.ceil(boundsWidth + padding * 2);
+        const imageHeight = Math.ceil(boundsHeight + padding * 2);
+
+        // Transform that places all members cleanly in the exported image at native 1x scale
+        const offsetX = -minX + padding;
+        const offsetY = -minY + padding;
+
+        // High resolution: 2x pixel ratio for retina crispness, scale down ratio if tree is massive
+        const pixelRatio = imageWidth > 3400 || imageHeight > 3400 ? 1.5 : 2;
+
+        // Generate PNG via native binary Blob (vastly faster than dataURL string serialization)
+        // skipFonts: true prevents downloading and encoding all web fonts, eliminating post-export freeze
+        const blob = await toBlob(viewportElement, {
           backgroundColor: '#fafafa',
-          quality: 0.95,
-          pixelRatio: 2,
+          width: imageWidth,
+          height: imageHeight,
+          style: {
+            width: `${imageWidth}px`,
+            height: `${imageHeight}px`,
+            transform: `translate(${offsetX}px, ${offsetY}px) scale(1)`,
+            transformOrigin: '0 0',
+          },
+          pixelRatio,
+          skipFonts: true,
+          cacheBust: false,
+          filter: (domNode) => {
+            if (domNode instanceof HTMLElement) {
+              // Exclude react-flow handles (connection ports)
+              if (domNode.classList.contains('react-flow__handle')) {
+                return false;
+              }
+              // Exclude action contextual popups
+              if (
+                domNode.classList.contains('nodrag') &&
+                domNode.classList.contains('nopan')
+              ) {
+                return false;
+              }
+            }
+            return true;
+          },
         });
 
+        if (!blob) {
+          throw new Error('Gagal menghasilkan file gambar.');
+        }
+
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         const cleanTitle = (treeTitle || 'pohon-keluarga')
           .toLowerCase()
           .replace(/[^a-z0-9]/g, '-');
         link.download = `${cleanTitle}-${new Date().toISOString().slice(0, 10)}.png`;
-        link.href = dataUrl;
+        link.href = url;
+        document.body.appendChild(link);
         link.click();
-        onToast?.('Gambar pohon keluarga berhasil diekspor!');
+        document.body.removeChild(link);
+
+        // Immediate cleanup of Object URL to release memory and avoid garbage collection lag
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 1500);
+
+        onToast?.('Gambar pohon keluarga (seluruh anggota) berhasil diekspor!');
       } catch (err) {
         console.error('Failed to export PNG:', err);
         onToast?.('Gagal mengekspor gambar. Silakan coba kembali.');
@@ -293,7 +385,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
     };
 
     performExport();
-  }, [exportTrigger, treeTitle, onExportComplete, onToast]);
+  }, [exportTrigger, treeTitle, members, onExportComplete, onToast]);
 
   // Initial fit view on mount handled cleanly via fitViewOptions on ReactFlow
   return (

@@ -16,6 +16,7 @@ import {
   RefreshCw,
   GitFork,
   BookOpen,
+  Loader2,
 } from 'lucide-react';
 
 interface TopNavigationProps {
@@ -278,9 +279,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
                     onExportPNG();
                   }}
                   disabled={isExportingImage}
-                  className="w-full px-3 py-2 text-left text-xs text-neutral-700 hover:bg-neutral-50 flex items-center gap-2.5 transition-colors"
+                  className="w-full px-3 py-2 text-left text-xs text-neutral-700 hover:bg-neutral-50 flex items-center gap-2.5 transition-colors disabled:opacity-60"
                 >
-                  <ImageIcon className="w-4 h-4 text-neutral-500" />
+                  {isExportingImage ? (
+                    <Loader2 className="w-4 h-4 text-neutral-500 animate-spin" />
+                  ) : (
+                    <ImageIcon className="w-4 h-4 text-neutral-500" />
+                  )}
                   <span>{isExportingImage ? 'Sedang mengekspor...' : 'Ekspor Gambar (PNG)'}</span>
                 </button>
 

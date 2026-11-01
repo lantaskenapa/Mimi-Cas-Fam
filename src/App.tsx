@@ -436,6 +436,11 @@ export default function App() {
 
   // Export handlers
   const handleExportPNG = () => {
+    setSelectedMemberId(null);
+    setIsSidePanelOpen(false);
+    if (activeView !== 'tree') {
+      setActiveView('tree');
+    }
     setIsExportingImage(true);
     setExportTrigger((prev) => prev + 1);
   };
