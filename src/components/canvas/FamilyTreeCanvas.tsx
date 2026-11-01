@@ -252,9 +252,30 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
     setZoomLevel(viewport.zoom);
   }, []);
 
-  // Handle Export to PNG covering the entire workspace of all members
+  // Refs to avoid unnecessary re-triggers and keep latest values
+  const lastHandledTriggerRef = useRef<number>(0);
+  const isExportingRef = useRef<boolean>(false);
+  const onExportCompleteRef = useRef(onExportComplete);
+  onExportCompleteRef.current = onExportComplete;
+  const onToastRef = useRef(onToast);
+  onToastRef.current = onToast;
+  const treeTitleRef = useRef(treeTitle);
+  treeTitleRef.current = treeTitle;
+  const membersRef = useRef(members);
+  membersRef.current = members;
+
+  // Handle Export to PNG covering the entire workspace of all members (strictly once per user trigger)
   useEffect(() => {
-    if (exportTrigger === 0) return;
+    // Only execute when exportTrigger has genuinely changed and is > 0
+    if (exportTrigger === 0 || exportTrigger === lastHandledTriggerRef.current) {
+      return;
+    }
+    if (isExportingRef.current) {
+      return;
+    }
+
+    lastHandledTriggerRef.current = exportTrigger;
+    isExportingRef.current = true;
 
     const performExport = async () => {
       try {
@@ -264,14 +285,13 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         ) as HTMLElement;
 
         if (!viewportElement) {
-          onToast?.('Tidak dapat memproses ekspor canvas.');
-          onExportComplete();
+          onToastRef.current?.('Tidak dapat memproses ekspor canvas.');
           return;
         }
 
-        if (!members || members.length === 0) {
-          onToast?.('Pohon keluarga masih kosong, tidak ada data untuk diekspor.');
-          onExportComplete();
+        const currentMembers = membersRef.current;
+        if (!currentMembers || currentMembers.length === 0) {
+          onToastRef.current?.('Pohon keluarga masih kosong, tidak ada data untuk diekspor.');
           return;
         }
 
@@ -287,7 +307,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
         const CARD_WIDTH = 150;
         const CARD_HEIGHT = 165;
 
-        for (const m of members) {
+        for (const m of currentMembers) {
           const x = m.position.x;
           const y = m.position.y;
           if (x < minX) minX = x;
@@ -361,7 +381,7 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
 
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        const cleanTitle = (treeTitle || 'pohon-keluarga')
+        const cleanTitle = (treeTitleRef.current || 'pohon-keluarga')
           .toLowerCase()
           .replace(/[^a-z0-9]/g, '-');
         link.download = `${cleanTitle}-${new Date().toISOString().slice(0, 10)}.png`;
@@ -375,17 +395,18 @@ const CanvasInner: React.FC<FamilyTreeCanvasProps> = ({
           URL.revokeObjectURL(url);
         }, 1500);
 
-        onToast?.('Gambar pohon keluarga (seluruh anggota) berhasil diekspor!');
+        onToastRef.current?.('Gambar pohon keluarga (seluruh anggota) berhasil diekspor!');
       } catch (err) {
         console.error('Failed to export PNG:', err);
-        onToast?.('Gagal mengekspor gambar. Silakan coba kembali.');
+        onToastRef.current?.('Gagal mengekspor gambar. Silakan coba kembali.');
       } finally {
-        onExportComplete();
+        isExportingRef.current = false;
+        onExportCompleteRef.current?.();
       }
     };
 
     performExport();
-  }, [exportTrigger, treeTitle, members, onExportComplete, onToast]);
+  }, [exportTrigger]);
 
   // Initial fit view on mount handled cleanly via fitViewOptions on ReactFlow
   return (

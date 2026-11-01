@@ -55,9 +55,13 @@ export default function App() {
     return config.url && config.anonKey ? 'synced' : 'disconnected';
   });
 
+  const toastTimeoutRef = useRef<any>(null);
   const showToast = useCallback((msg: string) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
     setToastMessage(msg);
-    setTimeout(() => {
+    toastTimeoutRef.current = setTimeout(() => {
       setToastMessage(null);
     }, 2800);
   }, []);
@@ -445,6 +449,10 @@ export default function App() {
     setExportTrigger((prev) => prev + 1);
   };
 
+  const handleExportComplete = useCallback(() => {
+    setIsExportingImage(false);
+  }, []);
+
   const handleExportJSON = () => {
     exportTreeToJSON(dataset);
     showToast('Data pohon berhasil diekspor (JSON)');
@@ -547,7 +555,7 @@ export default function App() {
             onAddMemberDirect={handleAddNewMember}
             treeTitle={dataset.meta.title}
             exportTrigger={exportTrigger}
-            onExportComplete={() => setIsExportingImage(false)}
+            onExportComplete={handleExportComplete}
             onToast={showToast}
           />
         ) : (
