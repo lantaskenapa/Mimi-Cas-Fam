@@ -145,6 +145,126 @@ export function compareMembersBirthOrder(
   return a.fullName.localeCompare(b.fullName);
 }
 
+/**
+ * Converts a 1-based child index to Indonesian ordinal word
+ * 1 -> Pertama, 2 -> Kedua, 3 -> Ketiga, 4 -> Keempat, dst.
+ */
+export function getChildOrderWord(index: number): string {
+  const words: Record<number, string> = {
+    1: 'Pertama',
+    2: 'Kedua',
+    3: 'Ketiga',
+    4: 'Keempat',
+    5: 'Kelima',
+    6: 'Keenam',
+    7: 'Ketujuh',
+    8: 'Kedelapan',
+    9: 'Kesembilan',
+    10: 'Kesepuluh',
+    11: 'Kesebelas',
+    12: 'Kedua Belas',
+    13: 'Ketiga Belas',
+    14: 'Keempat Belas',
+    15: 'Kelima Belas',
+  };
+  return words[index] || `ke-${index}`;
+}
+
+/**
+ * Computes full child order information for a member relative to their family/parents
+ */
+export interface MemberChildOrder {
+  order: number; // 1, 2, 3...
+  word: string; // 'Pertama', 'Kedua', 'Ketiga'...
+  shortLabel: string; // 'Anak Pertama', 'Anak Kedua'... or 'Anak Tunggal'
+  fullLabel: string; // 'Anak Pertama (Sulung) dari 3 bersaudara', etc.
+  totalSiblings?: number;
+}
+
+export function computeMemberChildOrder(
+  member: FamilyMember,
+  allMembers: FamilyMember[]
+): MemberChildOrder | null {
+  // Collect all siblings in the family group (including self)
+  const siblingIdsSet = new Set<string>();
+
+  // If parents exist, get all children of those parents
+  if (member.parentIds && member.parentIds.length > 0) {
+    member.parentIds.forEach((pId) => {
+      const parent = allMembers.find((p) => p.id === pId);
+      if (parent && parent.childrenIds) {
+        parent.childrenIds.forEach((cId) => siblingIdsSet.add(cId));
+      }
+    });
+  }
+
+  // Also include explicit siblingIds if present
+  if (member.siblingIds) {
+    member.siblingIds.forEach((sId) => siblingIdsSet.add(sId));
+  }
+
+  // Always include self
+  siblingIdsSet.add(member.id);
+
+  const siblingList = Array.from(siblingIdsSet)
+    .map((id) => allMembers.find((m) => m.id === id))
+    .filter((m): m is FamilyMember => Boolean(m));
+
+  // If there are no parents and no siblings, check if member has explicit birthOrder
+  if (siblingList.length <= 1 && (!member.parentIds || member.parentIds.length === 0)) {
+    if (member.birthOrder !== undefined && member.birthOrder > 0) {
+      const word = getChildOrderWord(member.birthOrder);
+      return {
+        order: member.birthOrder,
+        word,
+        shortLabel: `Anak ${word}`,
+        fullLabel: `Anak ke-${member.birthOrder} (${word})`,
+        totalSiblings: undefined,
+      };
+    }
+    return null;
+  }
+
+  // Sort siblings chronologically by birthOrder or birthYear/date
+  siblingList.sort((a, b) => compareMembersBirthOrder(a, b));
+
+  const indexInList = siblingList.findIndex((m) => m.id === member.id);
+  const order =
+    member.birthOrder !== undefined && member.birthOrder > 0
+      ? member.birthOrder
+      : indexInList !== -1
+      ? indexInList + 1
+      : 1;
+
+  const total = siblingList.length;
+  const word = getChildOrderWord(order);
+
+  let fullLabel = `Anak ke-${order} (${word})`;
+  let shortLabel = `Anak ${word}`;
+
+  if (total === 1) {
+    shortLabel = 'Anak Tunggal';
+    fullLabel = 'Anak Tunggal';
+  } else if (order === 1) {
+    shortLabel = 'Anak Pertama (Sulung)';
+    fullLabel = `Anak Pertama (Sulung) dari ${total} bersaudara`;
+  } else if (order === total) {
+    shortLabel = `Anak ke-${order} (${word} / Bungsu)`;
+    fullLabel = `Anak ke-${order} (${word} / Bungsu) dari ${total} bersaudara`;
+  } else {
+    shortLabel = `Anak ke-${order} (${word})`;
+    fullLabel = `Anak ke-${order} (${word}) dari ${total} bersaudara`;
+  }
+
+  return {
+    order,
+    word,
+    shortLabel,
+    fullLabel,
+    totalSiblings: total,
+  };
+}
+
 interface FamilyUnit {
   id: string;
   primary: FamilyMember;

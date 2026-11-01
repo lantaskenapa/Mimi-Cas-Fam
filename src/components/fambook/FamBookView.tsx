@@ -4,6 +4,7 @@ import {
   calculateGenerations,
   compareMembersBirthOrder,
   autoArrangeTree,
+  getChildOrderWord,
 } from '../../utils/treeLayout';
 import {
   Search,
@@ -629,6 +630,9 @@ export const FamBookView: React.FC<FamBookViewProps> = ({
                                     <div className="flex items-center gap-1.5 flex-wrap">
                                       <span className="text-xs sm:text-sm font-semibold text-neutral-900 break-words sm:truncate">
                                         {child.fullName}
+                                      </span>
+                                      <span className="text-[10px] font-semibold text-neutral-800 bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200/80 shrink-0">
+                                        {unit.children.length === 1 ? 'Anak Tunggal' : `Anak ${getChildOrderWord(idx + 1)}`}
                                       </span>
                                       <span className="text-[10px] font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded shrink-0">
                                         {child.gender === 'male' ? 'Laki-laki' : 'Perempuan'}

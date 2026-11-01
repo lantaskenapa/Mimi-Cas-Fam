@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FamilyMember } from '../../types/family';
-import { getRelatedMembers } from '../../utils/treeLayout';
+import {
+  getRelatedMembers,
+  getChildOrderWord,
+  computeMemberChildOrder,
+  compareMembersBirthOrder,
+} from '../../utils/treeLayout';
 import {
   X,
   Edit2,
@@ -50,6 +55,21 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
     allMembers,
     member.id
   );
+
+  // Compute this member's child order in their family (Anak Pertama, Kedua, dst)
+  const memberChildOrderInfo = useMemo(() => {
+    return computeMemberChildOrder(member, allMembers);
+  }, [member, allMembers]);
+
+  // Sort children by birth order
+  const sortedChildren = useMemo(() => {
+    return [...children].sort((a, b) => compareMembersBirthOrder(a, b));
+  }, [children]);
+
+  // Sort siblings by birth order
+  const sortedSiblings = useMemo(() => {
+    return [...siblings].sort((a, b) => compareMembersBirthOrder(a, b));
+  }, [siblings]);
 
   const getInitials = (name: string) => {
     return name
@@ -153,6 +173,14 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
               {getLifeSpan()}
             </p>
           )}
+
+          {/* Prominent Child Order Badge */}
+          {memberChildOrderInfo && (
+            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-800 border border-neutral-200/90 shadow-2xs">
+              <Baby className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+              <span>{memberChildOrderInfo.fullLabel}</span>
+            </div>
+          )}
         </div>
 
         {/* Quick Facts List */}
@@ -171,6 +199,19 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
               </strong>
             </span>
           </div>
+
+          {/* Keterangan Urutan Kelahiran */}
+          {memberChildOrderInfo && (
+            <div className="flex items-center gap-2.5 text-neutral-600">
+              <Baby className="w-4 h-4 text-neutral-400 shrink-0" />
+              <span>
+                Urutan Kelahiran:{' '}
+                <strong className="font-semibold text-neutral-900">
+                  {memberChildOrderInfo.fullLabel}
+                </strong>
+              </span>
+            </div>
+          )}
 
           {member.birthPlace && (
             <div className="flex items-center gap-2.5 text-neutral-600">
@@ -300,7 +341,7 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-neutral-800 flex items-center gap-1.5">
                 <Baby className="w-3.5 h-3.5 text-neutral-400" />
-                Anak ({children.length})
+                Anak ({sortedChildren.length})
               </span>
               <button
                 onClick={() => onAddChild(member)}
@@ -309,25 +350,40 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
                 <UserPlus className="w-3 h-3" /> Tambah
               </button>
             </div>
-            {children.length > 0 ? (
+            {sortedChildren.length > 0 ? (
               <div className="space-y-1.5">
-                {children.map((child) => (
-                  <button
-                    key={child.id}
-                    onClick={() => onSelectMember(child)}
-                    className="w-full text-left p-2 rounded-lg border border-neutral-200/80 hover:border-neutral-400 hover:bg-neutral-50 transition-colors flex items-center justify-between group"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <p className="text-xs font-medium text-neutral-900 truncate">
-                        {child.fullName}
-                      </p>
-                      <p className="text-[10px] text-neutral-400 font-mono tabular-nums">
-                        {child.birthYear ? `Lahir ${child.birthYear}` : child.gender}
-                      </p>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-neutral-600 transition-colors shrink-0" />
-                  </button>
-                ))}
+                {sortedChildren.map((child, idx) => {
+                  const childOrder =
+                    child.birthOrder !== undefined && child.birthOrder > 0
+                      ? child.birthOrder
+                      : idx + 1;
+                  const word = getChildOrderWord(childOrder);
+                  const isOnly = sortedChildren.length === 1;
+                  const orderLabel = isOnly ? 'Anak Tunggal' : `Anak ${word}`;
+
+                  return (
+                    <button
+                      key={child.id}
+                      onClick={() => onSelectMember(child)}
+                      className="w-full text-left p-2.5 rounded-lg border border-neutral-200/80 hover:border-neutral-400 hover:bg-neutral-50 transition-colors flex items-center justify-between group"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs font-semibold text-neutral-900 truncate">
+                            {child.fullName}
+                          </p>
+                          <span className="text-[10px] font-medium text-neutral-700 bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                            {orderLabel}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-neutral-400 font-mono tabular-nums mt-0.5">
+                          {child.birthYear ? `Lahir ${child.birthYear}` : child.gender === 'female' ? 'Perempuan' : 'Laki-laki'}
+                        </p>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-neutral-600 transition-colors shrink-0" />
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-[11px] text-neutral-400 italic">
@@ -341,7 +397,7 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-neutral-800 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-neutral-400" />
-                Saudara Kandung ({siblings.length})
+                Saudara Kandung ({sortedSiblings.length})
               </span>
               <button
                 onClick={() => onAddSibling(member)}
@@ -351,25 +407,35 @@ export const SideDetailPanel: React.FC<SideDetailPanelProps> = ({
                 <UserPlus className="w-3 h-3" /> Tambah
               </button>
             </div>
-            {siblings.length > 0 ? (
+            {sortedSiblings.length > 0 ? (
               <div className="space-y-1.5">
-                {siblings.map((sibling) => (
-                  <button
-                    key={sibling.id}
-                    onClick={() => onSelectMember(sibling)}
-                    className="w-full text-left p-2 rounded-lg border border-neutral-200/80 hover:border-neutral-400 hover:bg-neutral-50 transition-colors flex items-center justify-between group"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <p className="text-xs font-medium text-neutral-900 truncate">
-                        {sibling.fullName}
-                      </p>
-                      <p className="text-[10px] text-neutral-400">
-                        {sibling.gender === 'female' ? 'Saudari' : 'Saudara'}
-                      </p>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-neutral-600 transition-colors shrink-0" />
-                  </button>
-                ))}
+                {sortedSiblings.map((sibling) => {
+                  const siblingOrderInfo = computeMemberChildOrder(sibling, allMembers);
+                  return (
+                    <button
+                      key={sibling.id}
+                      onClick={() => onSelectMember(sibling)}
+                      className="w-full text-left p-2.5 rounded-lg border border-neutral-200/80 hover:border-neutral-400 hover:bg-neutral-50 transition-colors flex items-center justify-between group"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-xs font-semibold text-neutral-900 truncate">
+                            {sibling.fullName}
+                          </p>
+                          {siblingOrderInfo && (
+                            <span className="text-[10px] font-medium text-neutral-700 bg-neutral-100 px-1.5 py-0.5 rounded border border-neutral-200">
+                              {siblingOrderInfo.shortLabel}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-neutral-400 mt-0.5">
+                          {sibling.gender === 'female' ? 'Saudari' : 'Saudara'}{sibling.birthYear ? ` • Lahir ${sibling.birthYear}` : ''}
+                        </p>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-neutral-300 group-hover:text-neutral-600 transition-colors shrink-0" />
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-[11px] text-neutral-400 py-1">
